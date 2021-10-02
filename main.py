@@ -82,6 +82,11 @@ def t_cteint(t):
     t.value = int(t.value)
     return t
 
+def t_ctechar(t):
+    r'^[a-zA-Z]+$'
+    t.value = int(t.value)
+    return t
+
 def t_ID(t):
     r'[A-Za-z]([A-Za-z]|[0-9]+)*'
     t.type = reserved.get(t.value,'ID')    # Validar que no exista palabra reservada
