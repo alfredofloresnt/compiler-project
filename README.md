@@ -1,5 +1,5 @@
 # Intrucciones
-1.- Ejecutar python main.exe
+1.- Ejecutar python main.py
 
 # Avanze 1
 En el archivo a00821482_Etapa1Gramatica, se encuentra lo siguiente:
