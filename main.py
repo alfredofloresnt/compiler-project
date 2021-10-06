@@ -1,6 +1,7 @@
 
 import ply.lex as lex
 import ply.yacc as yacc
+import varTables as vt
 
 # Lexer
 
@@ -105,55 +106,87 @@ def t_error(t):
 #Build lexer
 lexer = lex.lex()
 print("Lexer has been genereated!")
+    
 
+##################
+# Global functions
+##################
 
+dirFunc = None
+rowVarsAux = {}
+currentFunc = None
+currentType = None
+currentVarTable = None
 
 # YACC
 def p_PROGRAM(p):
-    '''program : PROGRAM ID SEMICOLON program2
-               | PROGRAM ID SEMICOLON program3
-               | PROGRAM ID SEMICOLON program4
-       program2 : decVars program3
-                | decVars program4
-       program3 : functions program4
-       program4 : MAIN LPAREN RPAREN block'''
+    '''program : PROGRAM ID np2CreateMainVarsTable SEMICOLON program2
+               | PROGRAM ID np2CreateMainVarsTable SEMICOLON program3
+               | PROGRAM ID np2CreateMainVarsTable SEMICOLON program4'''
+
+def p_PROGRAM2(p):
+    '''program2 : decVars program3
+                | decVars program4'''
+
+def p_PROGRAM3(p):
+    '''program3 : functions program4'''
+    
+def p_PROGRAM4(p):
+    '''program4 : MAIN LPAREN RPAREN block'''
 
 def p_DEC_VARS(p):
-    '''decVars : VARS decVars2
-       decVars2 : type TWOPOINTS decVars3
-       decVars3 : ID decVars4
-                | ID decVars5
-                | ID decVars6
-       decVars4 : COMMA decVars3
-       decVars5 : LSQUAREBRACKET cteint RSQUAREBRACKET decVars4
-                | LSQUAREBRACKET cteint RSQUAREBRACKET decVars6
-       decVars6 : SEMICOLON decVars2
+    '''decVars : VARS np3CreateVarsTable decVars2'''   
+
+def p_DEC_VARS2(p):
+    '''decVars2 : type TWOPOINTS decVars3'''
+    
+def p_DEC_VARS3(p):
+    '''decVars3 : ID np4AddCurrentTable decVars4
+                | ID np4AddCurrentTable decVars5
+                | ID np4AddCurrentTable decVars6'''
+
+def p_DEC_VARS4(p):
+    '''decVars4 : COMMA decVars3'''
+
+def p_DEC_VARS5(p):
+    '''decVars5 : LSQUAREBRACKET cteint RSQUAREBRACKET decVars4
+                | LSQUAREBRACKET cteint RSQUAREBRACKET decVars6'''
+
+def p_DEC_VARS6(p):
+    '''decVars6 : SEMICOLON decVars2
                 | SEMICOLON'''
+    
     
 def p_FUNCTIONS(p):
     '''functions : function functions
                 | function'''
     
 def p_FUNCTION(p):
-    '''function : FUNCTION type ID LPAREN param RPAREN decVars block
-                | FUNCTION VOID ID LPAREN param RPAREN decVars block'''
+    '''function : FUNCTION type ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN decVars block np12DeleteCurrentVarsTable
+                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN decVars block np12DeleteCurrentVarsTable'''
 
 def p_PARAM(p):
-    '''param : type TWOPOINTS ID empty
-             | type TWOPOINTS ID COMMA param'''
+    '''param : type TWOPOINTS ID np4AddCurrentTable empty
+             | type TWOPOINTS ID np4AddCurrentTable COMMA param'''
 
 
 def p_TYPE(p):
-    '''type : INT
-            | FLOAT
-            | CHAR'''
+    '''type : INT np5SetCurrentType
+            | FLOAT np5SetCurrentType
+            | CHAR np5SetCurrentType'''
 
 def p_BLOCK(p):
-    '''block : LBRACKET block2
-       block2 : block3
-               | block4
-       block3 : statement block2
-       block4 : RBRACKET'''
+    '''block : LBRACKET block2'''
+    
+def p_BLOCK2(p):
+    '''block2 : block3
+               | block4'''
+
+def p_BLOCK3(p):
+    '''block3 : statement block2'''
+
+def p_BLOCK4(p):
+    '''block4 : RBRACKET'''
 
 def p_STATEMENT(p):
     '''statement : assignation
@@ -170,16 +203,24 @@ def p_ASSIGNATION(p):
 
 def p_VARIABLE(p):
     '''variable : ID variable2
-                | ID
-       variable2 : LSQUAREBRACKET variable3 RSQUAREBRACKET
-       variable3 : expression'''
+                | ID'''
+
+def p_VARIABLE2(p):
+    '''variable2 : LSQUAREBRACKET variable3 RSQUAREBRACKET'''
+
+def p_VARIABLE3(p):
+    '''variable3 : expression'''
         
 def p_PRINT_ON_SCREEN(p):
-    '''print : PRINT LPAREN print2
-       print2 : expression print3
-                  | ctestring print3
-       print3 : COMMA print2
-                  | RPAREN SEMICOLON'''
+    '''print : PRINT LPAREN print2'''
+
+def p_PRINT_ON_SCREEN2(p):
+    '''print2 : expression print3
+              | ctestring print3'''
+
+def p_PRINT_ON_SCREEN3(p):
+    '''print3 : COMMA print2
+              | RPAREN SEMICOLON'''
 
 def p_WHILE_LOOP(p):
     '''whileLoop : WHILE LPAREN expression RPAREN block'''
@@ -203,32 +244,46 @@ def p_CONDITION(p):
 
 def p_FUNCTION_CALL(p):
     '''functionCall : ID LPAREN functionCall2
-                    | ID LPAREN RPAREN
-       functionCall2 : expression RPAREN
+                    | ID LPAREN RPAREN'''
+
+def p_FUNCTION_CALL2(p):
+    '''functionCall2 : expression RPAREN
                      | expression COMMA functionCall2'''
 
 def p_EXP(p):
-    '''exp : term exp2
-       exp2 : OPERATORTYPE1 exp
+    '''exp : term exp2'''
+
+def p_EXP2(p):
+    '''exp2 : OPERATORTYPE1 exp
             | empty'''
 
 def p_TERM(p):
-    '''term : factor term2
-       term2 : OPERATORTYPE2 term
+    '''term : factor term2'''
+
+def p_TERM2(p):
+    '''term2 : OPERATORTYPE2 term
              | empty'''
 
 def p_FACTOR(p):
     '''factor : LPAREN expression RPAREN
               | factor2 varcte
-              | factor3
-       factor2 : OPERATORTYPE1
-               | empty
-        factor3 : ID
+              | factor3'''
+
+def p_FACTOR2(p):
+    '''factor2 : OPERATORTYPE1
+               | empty'''
+
+def p_FACTOR3(p):
+    '''factor3 : ID
                 | ID LPAREN factor4
-                | ID LSQUAREBRACKET factor5
-        factor4 : expression COMMA factor4
-                | expression RPAREN
-        factor5 : expression COMMA factor5
+                | ID LSQUAREBRACKET factor5'''
+
+def p_FACTOR4(p):
+    '''factor4 : expression COMMA factor4
+                | expression RPAREN'''
+
+def p_FACTOR5(p):
+    '''factor5 : expression COMMA factor5
                 | expression RSQUAREBRACKET'''
 
 def p_VARCTE(p):
@@ -241,6 +296,66 @@ def p_EMPTY(p):
     '''empty :'''
     pass
 
+# Neuralgic points
+def p_NP2_CREATE_MAIN_VARS_TABLE(p):
+    '''np2CreateMainVarsTable : empty'''
+    global dirFunc
+    global currentFunc
+    dirFunc = vt.DirFunc()
+    dirFunc.insert({"name": p[-1], "type": "global", "table": None})
+    currentFunc = p[-1]
+
+def p_NP3_CREATE_VARS_TABLE(p):
+    '''np3CreateVarsTable : empty'''
+    global dirFunc
+    global currentVarTable
+    row = dirFunc.getFunctionByName(currentFunc)
+    if (row["table"] == None):
+        currentVarTable = vt.Vars()
+        dirFunc.addVarsTable(currentFunc, currentVarTable)
+        
+
+def p_NP4_ADD_CURRENT_TABLE(p):
+    '''np4AddCurrentTable : empty'''
+    global currentVarTable
+    global currentType
+    # Check if id-name in current VarsTable
+    id = currentVarTable.getVariableByName(p[-1])
+    if (id != None):
+        print("MyError: Multiple variable declaration of " + p[-1])
+    else:
+        currentVarTable.insert({"name": p[-1], "type": currentType, })
+
+def p_NP5_SET_CURRENT_TYPE(p):
+    '''np5SetCurrentType : empty'''
+    global currentType
+    currentType = p[-1]
+
+def p_NP6_DELETE_DIRFUNC_AND_CURRENT_VARTABLE(p):
+    '''np6DeleteDirFuncAndCurrentVarTable : empty'''
+
+def p_NP8_SET_CURRENT_TYPE_VOID(p):
+    '''np8SetCurrentTypeVoid : empty'''
+    global currentType
+    currentType = p[-1]
+
+def p_NP9_ADD_FUNCTION(p):
+    '''np9AddFunction : empty'''
+    global currentType
+    global currentFunc
+    # Check if id-name in dirFunc
+    row = dirFunc.getFunctionByName(p[-1])
+    if (row != None):
+        print("MyError: Multiple function declaration of " + p[-1])
+    else:
+        dirFunc.insert({"name": p[-1], "type": currentType, "table": None})
+        currentFunc = p[-1]
+
+def p_NP12_DELETE_CURRENT_VARS_TABLE(p):
+    '''np12DeleteCurrentVarsTable : empty'''
+    global currentVarTable
+    currentVarTable = None
+
 
 def p_error(t):
     print("Error (Syntax):", t.lexer.token(), t.value)
@@ -251,7 +366,7 @@ parser = yacc.yacc()
 print("Yacc has been generated!")
 
 
-codeToCompile = open('code.txt','r')
+codeToCompile = open('code3.txt','r')
 data = str(codeToCompile.read())
 lexer.input(data)
 # Debug tokens
@@ -260,9 +375,10 @@ lexer.input(data)
 #    if not tok: 
 #        break # No more input
 #    print(tok)
-
-try:    
+try:
+    
     parser.parse(data)
+    dirFunc.printDirFunc()
     print('Code passed!')
-except:
-    print('Error in code!')
+except Exception as e:
+    print('Error in code!', e)

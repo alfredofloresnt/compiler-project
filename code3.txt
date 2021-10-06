@@ -1,0 +1,10 @@
+program MyRlike;
+vars int: i, j, k;
+function void test123(int:m)
+vars float:n;
+{
+ n = j + m;
+}
+main(){
+i = 2;
+}
