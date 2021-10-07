@@ -276,9 +276,9 @@ def p_FACTOR2(p):
                | empty'''
 
 def p_FACTOR3(p):
-    '''factor3 : ID qnp1_push
-                | ID qnp1_push LPAREN factor4
-                | ID qnp1_push LSQUAREBRACKET factor5'''
+    '''factor3 : ID
+                | ID LPAREN factor4
+                | ID LSQUAREBRACKET factor5'''
 
 def p_FACTOR4(p):
     '''factor4 : expression COMMA factor4
@@ -326,7 +326,7 @@ def p_NP4_ADD_CURRENT_TABLE(p):
     if (id != None):
         print("MyError: Multiple variable declaration of " + p[-1])
     else:
-        currentVarTable.insert({"name": p[-1], "type": currentType, })
+        currentVarTable.insert({"name": p[-1], "type": currentType})
 
 def p_NP5_SET_CURRENT_TYPE(p):
     '''np5SetCurrentType : empty'''

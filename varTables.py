@@ -34,34 +34,34 @@
 
 class Vars:
     def __init__(self):
-        self.items = []
+        self.items = {}
     def insert(self, item):
-        self.items.append(item)
+        self.items[item["name"]] = item
     def getVariableByName(self, name):
-        for item in self.items:
-            if (item["name"] == name):
-                return item
+        if (name in self.items):
+            return self.items[name]
         return None
     def printVars(self):
         print(self.items)
 
 class DirFunc:
     def __init__(self):
-        self.dirFuncData = []
-    def get(self, index):
-        return self.dirFuncData[index]
+        self.dirFuncData = {}
     def insert(self, item):
-        self.dirFuncData.append(item)
+        self.dirFuncData[item["name"]] = item
     def getFunctionByName(self, name):
-        for item in self.dirFuncData:
-            if (item["name"] == name):
-                return item
+        if (name in self.dirFuncData):
+            return self.dirFuncData[name]
         return None
     def addVarsTable(self, name, data):
-        for item in self.dirFuncData:
-            if (item["name"] == name):
-                item["table"] = data
-                return item
+        if (name in self.dirFuncData):
+            self.dirFuncData[name]["table"] = data
+            return self.dirFuncData[name]["table"]
+        else:
+            return None
+    def getVarsTableByFunctionName(self, name):
+        if (name in self.dirFuncData):
+            return self.dirFuncData[name]["table"]
         return None
     def printDirFunc(self):
         print(self.dirFuncData)
