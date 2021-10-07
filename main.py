@@ -2,6 +2,7 @@
 import ply.lex as lex
 import ply.yacc as yacc
 import varTables as vt
+import quadruples as qp
 
 # Lexer
 
@@ -109,7 +110,7 @@ print("Lexer has been genereated!")
     
 
 ##################
-# Global functions
+# Global variables
 ##################
 
 dirFunc = None
@@ -117,6 +118,7 @@ rowVarsAux = {}
 currentFunc = None
 currentType = None
 currentVarTable = None
+quadruples = qp.Quadruples()
 
 # YACC
 def p_PROGRAM(p):
@@ -274,9 +276,9 @@ def p_FACTOR2(p):
                | empty'''
 
 def p_FACTOR3(p):
-    '''factor3 : ID
-                | ID LPAREN factor4
-                | ID LSQUAREBRACKET factor5'''
+    '''factor3 : ID qnp1_push
+                | ID qnp1_push LPAREN factor4
+                | ID qnp1_push LSQUAREBRACKET factor5'''
 
 def p_FACTOR4(p):
     '''factor4 : expression COMMA factor4
@@ -360,6 +362,13 @@ def p_NP12_DELETE_CURRENT_VARS_TABLE(p):
 def p_error(t):
     print("Error (Syntax):", t.lexer.token(), t.value)
     raise Exception("Syntax error")
+
+# Quadruples Neuralgic points 
+def p_QNP1_PUSH(p):
+    '''qnp1_push : empty'''
+    print("currentVarTable", currentVarTable)
+    quadruples.getOperandsStack().push(p[-1])
+
 
 # Build Yacc
 parser = yacc.yacc()
