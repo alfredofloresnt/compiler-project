@@ -1,3 +1,11 @@
+# Semantic cube access
+def getType(leftOperandType, rightOperandType, operation):
+    # Check if left and right operand type exist also operation else error
+    if (leftOperandType in semantic and rightOperand in semantic[leftOperandType] and operation in semantic[leftOperandType][rightOperandType]):
+        return semantic[leftOperandType][rightOperandType][operation]
+    else:
+        return None # Equals to error
+
 # Semantic cube definition
 semantic = {
     "int": {
@@ -7,23 +15,21 @@ semantic = {
             "*": "float",
             "/": "float",
             ">": "boolean",
+            ">=": "boolean",
             "<": "boolean",
-            "<>": "boolean",
+            ">=": "boolean",
+            "<>": "boolean"
         },
         "float": {
-
-        },
-        "boolean": {
-            
-        }
-    
+            "+": "float",
+            "-": "float",
+            "*": "float",
+            "/": "float",
+            ">": "boolean",
+            ">=": "boolean",
+            "<": "boolean",
+            ">=": "boolean",
+            "<>": "boolean"
+        } 
     }
 }
-
-# Semantic cube access
-def getType(leftOperandType, rightOperandType, operation):
-    # Check if left and right operand type exist also operation else error
-    if (semantic.has_key(leftOperandType) and semantic[leftOperandType].has_key(rightOperand) and semantic[leftOperandType][rightOperandType].has_key(operation)):
-        return semantic[leftOperandType][rightOperandType][operation]
-    else:
-        return None # Equals to error

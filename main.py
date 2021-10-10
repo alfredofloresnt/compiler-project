@@ -3,6 +3,7 @@ import ply.lex as lex
 import ply.yacc as yacc
 import varTables as vt
 import quadruples as qp
+import semanticCube as sc
 
 # Lexer
 
@@ -118,6 +119,7 @@ rowVarsAux = {}
 currentFunc = None
 currentType = None
 currentVarTable = None
+globalFunctionName = None
 quadruples = qp.Quadruples()
 
 # YACC
@@ -253,17 +255,17 @@ def p_FUNCTION_CALL2(p):
                      | expression COMMA functionCall2'''
 
 def p_EXP(p):
-    '''exp : term exp2'''
+    '''exp : term qnp4_push_operationtype1_apply exp2'''
 
 def p_EXP2(p):
-    '''exp2 : OPERATORTYPE1 exp
+    '''exp2 : OPERATORTYPE1 qnp2_push_operations exp
             | empty'''
 
 def p_TERM(p):
     '''term : factor term2'''
 
 def p_TERM2(p):
-    '''term2 : OPERATORTYPE2 term
+    '''term2 : OPERATORTYPE2 qnp2_push_operations term
              | empty'''
 
 def p_FACTOR(p):
@@ -276,9 +278,9 @@ def p_FACTOR2(p):
                | empty'''
 
 def p_FACTOR3(p):
-    '''factor3 : ID
-                | ID LPAREN factor4
-                | ID LSQUAREBRACKET factor5'''
+    '''factor3 : ID qnp1_push
+                | ID qnp1_push LPAREN factor4
+                | ID qnp1_push LSQUAREBRACKET factor5'''
 
 def p_FACTOR4(p):
     '''factor4 : expression COMMA factor4
@@ -303,8 +305,10 @@ def p_NP2_CREATE_MAIN_VARS_TABLE(p):
     '''np2CreateMainVarsTable : empty'''
     global dirFunc
     global currentFunc
+    global globalFunctionName
     dirFunc = vt.DirFunc()
     dirFunc.insert({"name": p[-1], "type": "global", "table": None})
+    globalFunctionName = p[-1]
     currentFunc = p[-1]
 
 def p_NP3_CREATE_VARS_TABLE(p):
@@ -324,7 +328,7 @@ def p_NP4_ADD_CURRENT_TABLE(p):
     # Check if id-name in current VarsTable
     id = currentVarTable.getVariableByName(p[-1])
     if (id != None):
-        print("MyError: Multiple variable declaration of " + p[-1])
+        print("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
         currentVarTable.insert({"name": p[-1], "type": currentType})
 
@@ -348,7 +352,7 @@ def p_NP9_ADD_FUNCTION(p):
     # Check if id-name in dirFunc
     row = dirFunc.getFunctionByName(p[-1])
     if (row != None):
-        print("MyError: Multiple function declaration of " + p[-1])
+        print("Semantic Error: Multiple function declaration of " + p[-1])
     else:
         dirFunc.insert({"name": p[-1], "type": currentType, "table": None})
         currentFunc = p[-1]
@@ -366,9 +370,39 @@ def p_error(t):
 # Quadruples Neuralgic points 
 def p_QNP1_PUSH(p):
     '''qnp1_push : empty'''
-    print("currentVarTable", currentVarTable)
     quadruples.getOperandsStack().push(p[-1])
+    # Check if variable is declared on local or global functions and add to stacks
+    if (currentVarTable.getVariableByName(p[-1]) != None):
+        quadruples.getTypeStack().push(currentVarTable.getVariableByName(p[-1])["type"])
+    elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1]) != None):
+        quadruples.getTypeStack().push(dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])["type"])
+    else:
+        print("Semantic Error: Variable not declared", p[-1])
 
+def p_QNP2_PUSH_OPERATIONS(p):
+    '''qnp2_push_operations : empty'''
+    quadruples.getOperationsStack().push(p[-1])
+
+def p_QNP4_OPERATIONTYPE1_APPLY(p):
+    '''qnp4_push_operationtype1_apply : empty'''
+#    quadruples.printStacks()
+#    if (quadruples.getOperandsStack().size() > 0):
+#        if (quadruples.getOperationsStack().top() == "+" or quadruples.getOperationsStack().top() == "-"):
+#            rightOperand = quadruples.getOperandsStack().top()
+#            quadruples.getOperandsStack().pop()
+#            quadruples.getTypeStack().pop()
+#            leftOperand = quadruples.getOperandsStack().top()
+#            quadruples.getOperandsStack().pop()
+#            quadruples.getTypeStack().pop()
+#            operation = quadruples.getOperationsStack().top()
+#            quadruples.getOperationsStack().pop()
+#            resultType = sc.getType(leftOperand, rightOperand, operation)
+#            if (resultType != None):
+#                result = # This line has to be modified in the future. Addressing needs to be implemented
+#                quadruples.generateQuad(operation, leftOperand, rightOperand, result)
+#                quadruples.getOperandsStack(result)
+#                quadruples.getTypeStack().push(resultType)
+    
 
 # Build Yacc
 parser = yacc.yacc()
@@ -387,7 +421,8 @@ lexer.input(data)
 try:
     
     parser.parse(data)
-    dirFunc.printDirFunc()
+    # quadruples.printStacks()
+    # dirFunc.printDirFunc()
     print('Code passed!')
 except Exception as e:
     print('Error in code!', e)
