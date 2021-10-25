@@ -4,6 +4,7 @@ import ply.yacc as yacc
 import varTables as vt
 import quadruples as qp
 import semanticCube as sc
+import random
 
 # Lexer
 
@@ -203,7 +204,7 @@ def p_STATEMENT(p):
                 | returnFunc'''
 
 def p_ASSIGNATION(p):
-    '''assignation : variable EQUAL expression SEMICOLON'''
+    '''assignation : variable EQUAL expression assigmentnp SEMICOLON'''
 
 def p_VARIABLE(p):
     '''variable : ID variable2
@@ -385,24 +386,102 @@ def p_QNP2_PUSH_OPERATIONS(p):
 
 def p_QNP4_OPERATIONTYPE1_APPLY(p):
     '''qnp4_push_operationtype1_apply : empty'''
-#    quadruples.printStacks()
-#    if (quadruples.getOperandsStack().size() > 0):
-#        if (quadruples.getOperationsStack().top() == "+" or quadruples.getOperationsStack().top() == "-"):
-#            rightOperand = quadruples.getOperandsStack().top()
-#            quadruples.getOperandsStack().pop()
-#            quadruples.getTypeStack().pop()
-#            leftOperand = quadruples.getOperandsStack().top()
-#            quadruples.getOperandsStack().pop()
-#            quadruples.getTypeStack().pop()
-#            operation = quadruples.getOperationsStack().top()
-#            quadruples.getOperationsStack().pop()
-#            resultType = sc.getType(leftOperand, rightOperand, operation)
-#            if (resultType != None):
-#                result = # This line has to be modified in the future. Addressing needs to be implemented
-#                quadruples.generateQuad(operation, leftOperand, rightOperand, result)
-#                quadruples.getOperandsStack(result)
-#                quadruples.getTypeStack().push(resultType)
+    if (quadruples.getOperationsStack().size() > 0):
+        print(quadruples.getOperationsStack().top())
+        if (quadruples.getOperationsStack().top() == "+" or quadruples.getOperationsStack().top() == "-"):
+            rightOperand = quadruples.getOperandsStack().top()
+            quadruples.getOperandsStack().pop()
+            rightOperandType = quadruples.getTypeStack().top()
+            quadruples.getTypeStack().pop()
+            leftOperand = quadruples.getOperandsStack().top()
+            quadruples.getOperandsStack().pop()
+            leftOperandType = quadruples.getTypeStack().top()
+            quadruples.getTypeStack().pop()
+            operation = quadruples.getOperationsStack().top()
+            quadruples.getOperationsStack().pop()
+            resultType = sc.getType(leftOperandType, rightOperandType, operation)
+            if (resultType != None):
+                result = random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
+                quadruples.generateQuad(operation, leftOperand, rightOperand, result)
+                quadruples.getOperandsStack().push(result)
+                quadruples.getTypeStack().push(resultType)
+            else:
+                print("Semantic Error: Type mismatch")
     
+def p_QNP5_OPERATIONTYPE2_APPLY(p):
+    '''qnp5_push_operationtype2_apply : empty'''
+
+
+# Neuralgic point for ASSIGMENT statement
+def p_ASSIGMENTNP(p):
+    '''assigmentnp : empty'''
+    quadruples.printStacks()
+    #tempVar = quadruples.getOperandsStack().top() 
+    #quadruples.getOperandsStack().pop()
+    #varToAssign = quadruples.getOperandsStack().top()
+    #quadruples.getOperandsStack().pop()
+
+    #resultType = sc.getType(idType, typeR, '=')
+    #if (resultType != None and operator == '='):
+    #    quadruples.generateQuad('=', 
+
+# Neuralgic point for IF statement
+def p_IFNP1(p):
+    '''ifnp1 : empty'''
+    expType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    if (expType != 'boolean'):
+        print("Semantic Error: Type mismatch")
+    else:
+        result = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.generateQuad('GoToF', result, 'empty', None)
+        cont = quadruples.getQuad().size()
+        quadruples.getJumpsStack().push(cont - 1)
+
+def p_IFNP2_END(p):
+    '''ifnp2End : empty'''
+    end = quadruples.getJumpsStack().pop()
+    cont = quadruples.getQuad().size()
+    quadruples.fillQuad(end, cont)
+
+def p_IFNP3_ELSE(p):
+    '''ifnp3Else : empty'''
+    quadruples.generateQuad('GoTo', 'empty', 'empty', None)
+    false = quadruples.getJumpsStack().top()
+    quadruples.getJumpsStack().pop()
+    cont = quadruples.getQuad().size()
+    quadruples.getJumpsStack().push(cont - 1)
+    quadruples.fillQuad(false, cont)
+
+# Neuralgic point for WHILE statement
+def p_WHILENP1(p):
+    '''ifnpWhile1 : empty'''
+    cont = quadruples.getQuad().size()
+    quadruples.getJumpsStack().push(cont)
+
+def p_WHILENP2(p):
+    '''ifnpWhile2 : empty'''
+    expType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    if (expType != 'boolean'):
+        print("Semantic Error: Type mismatch")
+    else:
+        result = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.generateQuad('GoToF', result, 'empty', None)
+        cont = quadruples.getQuad().size()
+        quadruples.getJumpsStack().push(cont - 1)
+
+def p_WHILENP3(p):
+    '''ifnpWhile3 : empty'''
+    end = quadruples.getJumpsStack().top()
+    quadruples.getJumpsStack().pop()
+    ret = quadruples.getJumpsStack().top()
+    quadruples.getJumpsStack().pop()
+    cont = quadruples.getQuad().size()
+    quadruples.generateQuad('GoTo', 'empty', 'empty', ret)
+    quadruples.fillQuad(end, cont)
 
 # Build Yacc
 parser = yacc.yacc()

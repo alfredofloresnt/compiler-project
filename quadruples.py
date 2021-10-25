@@ -37,6 +37,7 @@ class Quadruples:
         self.operandsStack = Stack()
         self.operationsStack = Stack()
         self.typesStack = Stack()
+        self.jumpsStack = Stack()
         self.quad = Stack()
     def getOperandsStack(self):
         return self.operandsStack
@@ -44,8 +45,14 @@ class Quadruples:
         return self.operationsStack
     def getTypeStack(self):
         return self.typesStack
+    def getJumpsStack(self):
+        return self.jumpsStack
+    def getQuad(self):
+        return self.quad
     def generateQuad(self, operator, leftOperand, rightOperand, result):
         self.quad.push([operator, leftOperand, rightOperand, result])
+    def fillQuad(self, index, val):
+        self.quad[index][3] = val
     def printStacks(self):
         print("operandsStack")
         self.operandsStack.printStack()
@@ -53,6 +60,8 @@ class Quadruples:
         self.operationsStack.printStack()
         print("typesStack")
         self.typesStack.printStack()
+        print("jumpsStack")
+        self.jumpsStack.printStack()
     
 
     

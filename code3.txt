@@ -6,5 +6,5 @@ vars float:n;
  n = j + m;
 }
 main(){
-i = 2;
+
 }
