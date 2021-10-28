@@ -204,11 +204,11 @@ def p_STATEMENT(p):
                 | returnFunc'''
 
 def p_ASSIGNATION(p):
-    '''assignation : variable EQUAL expression assigmentnp SEMICOLON'''
+    '''assignation : variable EQUAL qnp2_push_operations expression assigmentnp SEMICOLON'''
 
 def p_VARIABLE(p):
-    '''variable : ID variable2
-                | ID'''
+    '''variable : ID qnp1_push variable2
+                | ID qnp1_push'''
 
 def p_VARIABLE2(p):
     '''variable2 : LSQUAREBRACKET variable3 RSQUAREBRACKET'''
@@ -389,6 +389,7 @@ def p_QNP4_OPERATIONTYPE1_APPLY(p):
     if (quadruples.getOperationsStack().size() > 0):
         print(quadruples.getOperationsStack().top())
         if (quadruples.getOperationsStack().top() == "+" or quadruples.getOperationsStack().top() == "-"):
+            #quadruples.printStacks()
             rightOperand = quadruples.getOperandsStack().top()
             quadruples.getOperandsStack().pop()
             rightOperandType = quadruples.getTypeStack().top()
@@ -403,8 +404,11 @@ def p_QNP4_OPERATIONTYPE1_APPLY(p):
             if (resultType != None):
                 result = random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
                 quadruples.generateQuad(operation, leftOperand, rightOperand, result)
+                #print("OPERAND", result)
                 quadruples.getOperandsStack().push(result)
                 quadruples.getTypeStack().push(resultType)
+                #print("===========")
+                #quadruples.printStacks()
             else:
                 print("Semantic Error: Type mismatch")
     
@@ -415,16 +419,24 @@ def p_QNP5_OPERATIONTYPE2_APPLY(p):
 # Neuralgic point for ASSIGMENT statement
 def p_ASSIGMENTNP(p):
     '''assigmentnp : empty'''
+    #quadruples.printQuads()
     quadruples.printStacks()
-    #tempVar = quadruples.getOperandsStack().top() 
-    #quadruples.getOperandsStack().pop()
-    #varToAssign = quadruples.getOperandsStack().top()
-    #quadruples.getOperandsStack().pop()
-
-    #resultType = sc.getType(idType, typeR, '=')
-    #if (resultType != None and operator == '='):
-    #    quadruples.generateQuad('=', 
-
+    resType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    result = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    idType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    id = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    equalSymbol = quadruples.getOperationsStack().top()
+    quadruples.getOperationsStack().pop()
+    resIDType = sc.getType(idType, resType, '=')
+    if (equalSymbol == "=" and resIDType == "valid"):
+        quadruples.generateQuad(equalSymbol, result, 'empty', id)
+    else:
+        print("Semantic Error: Type mismatch", resType, "cannot be", idType)
+        
 # Neuralgic point for IF statement
 def p_IFNP1(p):
     '''ifnp1 : empty'''
@@ -500,7 +512,7 @@ lexer.input(data)
 try:
     
     parser.parse(data)
-    # quadruples.printStacks()
+    quadruples.printQuads()
     # dirFunc.printDirFunc()
     print('Code passed!')
 except Exception as e:

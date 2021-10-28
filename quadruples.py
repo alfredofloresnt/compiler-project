@@ -12,6 +12,8 @@ class Stack:
         return len(self.items)
     def top(self):
         return self.items[len(self.items)-1]
+    def get(self, index):
+        return self.items[index]
     def printStack(self):
         print(self.items)
 
@@ -53,6 +55,9 @@ class Quadruples:
         self.quad.push([operator, leftOperand, rightOperand, result])
     def fillQuad(self, index, val):
         self.quad[index][3] = val
+    def printQuads(self):
+        for i in range(self.quad.size()):
+            print("Quad", i+1, ":", self.quad.get(i)[0], self.quad.get(i)[1], self.quad.get(i)[2], self.quad.get(i)[3])
     def printStacks(self):
         print("operandsStack")
         self.operandsStack.printStack()

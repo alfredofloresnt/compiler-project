@@ -1,7 +1,7 @@
 program MyRlike;
 vars int: i, j, k;
 function void test123(int:m)
-vars float:n;
+vars int:n;
 {
  n = j + m;
 }
