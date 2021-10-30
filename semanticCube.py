@@ -12,7 +12,7 @@ semantic = {
         "int": {
             "+": "int",
             "-": "int",
-            "*": "float",
+            "*": "int",
             "/": "float",
             "=": "valid",
             ">": "boolean",

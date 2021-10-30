@@ -240,12 +240,14 @@ def p_READ_INPUT(p):
     '''readInput : READ LPAREN variable RPAREN SEMICOLON'''
 
 def p_EXPRESSION(p):
-    '''expression : exp
-                 | exp RELOP exp'''
+    '''expression : exp qnp6_push_operationtypeRELOP_apply
+                 | exp RELOP qnp2_push_operations exp qnp6_push_operationtypeRELOP_apply'''
 
 def p_CONDITION(p):
-    '''condition : IF LPAREN expression RPAREN block
-            | IF LPAREN expression RPAREN block ELSE block'''
+    '''condition : IF LPAREN expression ifnp1 RPAREN block ifnp2End
+                 | IF LPAREN expression ifnp1 RPAREN block ELSE ifnp3Else block ifnp2End'''
+    
+
 
 def p_FUNCTION_CALL(p):
     '''functionCall : ID LPAREN functionCall2
@@ -263,7 +265,7 @@ def p_EXP2(p):
             | empty'''
 
 def p_TERM(p):
-    '''term : factor term2'''
+    '''term : factor qnp5_push_operationtype2_apply term2'''
 
 def p_TERM2(p):
     '''term2 : OPERATORTYPE2 qnp2_push_operations term
@@ -302,6 +304,12 @@ def p_EMPTY(p):
     pass
 
 # Neuralgic points
+
+def p_TEST(p):
+    '''np0Test : empty'''
+    print("BBBB")
+    quadruples.printStacks()
+
 def p_NP2_CREATE_MAIN_VARS_TABLE(p):
     '''np2CreateMainVarsTable : empty'''
     global dirFunc
@@ -384,43 +392,53 @@ def p_QNP2_PUSH_OPERATIONS(p):
     '''qnp2_push_operations : empty'''
     quadruples.getOperationsStack().push(p[-1])
 
+def quadruplesProcess():
+    print("ENTER PROCESS")
+    rightOperand = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    rightOperandType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    leftOperand = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    leftOperandType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    operation = quadruples.getOperationsStack().top()
+    quadruples.getOperationsStack().pop()
+    resultType = sc.getType(leftOperandType, rightOperandType, operation)
+    if (resultType != None):
+        result = random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
+        quadruples.generateQuad(operation, leftOperand, rightOperand, result)
+        quadruples.getOperandsStack().push(result)
+        quadruples.getTypeStack().push(resultType)
+    else:
+        print("Semantic Error: Type mismatch")
+
 def p_QNP4_OPERATIONTYPE1_APPLY(p):
     '''qnp4_push_operationtype1_apply : empty'''
     if (quadruples.getOperationsStack().size() > 0):
-        print(quadruples.getOperationsStack().top())
+        #print("CHECK SUM", quadruples.getOperationsStack().top())
         if (quadruples.getOperationsStack().top() == "+" or quadruples.getOperationsStack().top() == "-"):
-            #quadruples.printStacks()
-            rightOperand = quadruples.getOperandsStack().top()
-            quadruples.getOperandsStack().pop()
-            rightOperandType = quadruples.getTypeStack().top()
-            quadruples.getTypeStack().pop()
-            leftOperand = quadruples.getOperandsStack().top()
-            quadruples.getOperandsStack().pop()
-            leftOperandType = quadruples.getTypeStack().top()
-            quadruples.getTypeStack().pop()
-            operation = quadruples.getOperationsStack().top()
-            quadruples.getOperationsStack().pop()
-            resultType = sc.getType(leftOperandType, rightOperandType, operation)
-            if (resultType != None):
-                result = random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
-                quadruples.generateQuad(operation, leftOperand, rightOperand, result)
-                #print("OPERAND", result)
-                quadruples.getOperandsStack().push(result)
-                quadruples.getTypeStack().push(resultType)
-                #print("===========")
-                #quadruples.printStacks()
-            else:
-                print("Semantic Error: Type mismatch")
+            quadruplesProcess()
     
 def p_QNP5_OPERATIONTYPE2_APPLY(p):
     '''qnp5_push_operationtype2_apply : empty'''
+    if (quadruples.getOperationsStack().size() > 0):
+        #print("CHECK MULT", quadruples.getOperationsStack().top())
+        if (quadruples.getOperationsStack().top() == "*" or quadruples.getOperationsStack().top() == "/"):
+            quadruplesProcess()
+
+def p_QNP6_OPERATIONTYPERELOP_APPLY(p):
+    '''qnp6_push_operationtypeRELOP_apply : empty'''
+    if (quadruples.getOperationsStack().size() > 0):
+        #("CHECK RELOP", quadruples.getOperationsStack().top())
+        if (quadruples.getOperationsStack().top() == ">" or quadruples.getOperationsStack().top() == "<" or quadruples.getOperationsStack().top() == "<>" or quadruples.getOperationsStack().top() == "<=" or quadruples.getOperationsStack().top() == ">="):
+            quadruplesProcess()
+
 
 
 # Neuralgic point for ASSIGMENT statement
 def p_ASSIGMENTNP(p):
     '''assigmentnp : empty'''
-    #quadruples.printQuads()
-    quadruples.printStacks()
     resType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     result = quadruples.getOperandsStack().top()
@@ -443,18 +461,20 @@ def p_IFNP1(p):
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (expType != 'boolean'):
-        print("Semantic Error: Type mismatch")
+        print("Semantic Error: Type mismatch, not boolean")
     else:
         result = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
         quadruples.generateQuad('GoToF', result, 'empty', None)
-        cont = quadruples.getQuad().size()
+        cont = quadruples.getQuad().size() + 1
         quadruples.getJumpsStack().push(cont - 1)
 
 def p_IFNP2_END(p):
     '''ifnp2End : empty'''
-    end = quadruples.getJumpsStack().pop()
-    cont = quadruples.getQuad().size()
+    print("IF END")
+    end = quadruples.getJumpsStack().top()
+    quadruples.getJumpsStack().pop()
+    cont = quadruples.getQuad().size() + 1
     quadruples.fillQuad(end, cont)
 
 def p_IFNP3_ELSE(p):
@@ -462,9 +482,13 @@ def p_IFNP3_ELSE(p):
     quadruples.generateQuad('GoTo', 'empty', 'empty', None)
     false = quadruples.getJumpsStack().top()
     quadruples.getJumpsStack().pop()
-    cont = quadruples.getQuad().size()
+    cont = quadruples.getQuad().size() + 1
     quadruples.getJumpsStack().push(cont - 1)
     quadruples.fillQuad(false, cont)
+
+def p_RELOP_ADD(p):
+    '''relopnp : empty'''
+    quadruples.getOperationsStack().push(p[-1])
 
 # Neuralgic point for WHILE statement
 def p_WHILENP1(p):

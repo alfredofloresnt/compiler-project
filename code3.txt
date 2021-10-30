@@ -3,7 +3,12 @@ vars int: i, j, k;
 function void test123(int:m)
 vars int:n;
 {
- n = j + m;
+    if (i * j > n + m ){
+        j = k;
+    } else {
+        m = i;
+    }
+    n = i + k;
 }
 main(){
 
