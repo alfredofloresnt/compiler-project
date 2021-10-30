@@ -59,4 +59,10 @@ semantic = {
             "<>": "boolean"
         } 
     },
+    "boolean": {
+        "boolean": {
+            "&&": "boolean",
+            "||": "boolean"
+        }
+    }
 }

@@ -3,7 +3,9 @@ vars int: i, j, k;
 function void test123(int:m)
 vars float:n;
 {
-    n = ((i + j) / n) * m;
+    if (m > n || n <> j){
+
+    }
 }
 main(){
 

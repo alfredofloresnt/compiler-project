@@ -47,6 +47,7 @@ tokens = ['LETTER',
           'TWOPOINTS',
           'OPERATORTYPE1',
           'OPERATORTYPE2',
+          'LOGICOPERATOR',
           'SEMICOLON',
           'COMMA'] + list(reserved.values())
 
@@ -72,6 +73,7 @@ t_RSQUAREBRACKET = r'\]'
 t_TWOPOINTS = r':'
 t_OPERATORTYPE1 = r'\+|\-'
 t_OPERATORTYPE2 = r'(\*|\/)'
+t_LOGICOPERATOR = r'(\&\&|\|\|)'
 t_SEMICOLON = r';'
 t_COMMA = r','
 t_ignore = ' '
@@ -228,24 +230,29 @@ def p_PRINT_ON_SCREEN3(p):
               | RPAREN SEMICOLON'''
 
 def p_WHILE_LOOP(p):
-    '''whileLoop : WHILE LPAREN expression RPAREN block'''
+    '''whileLoop : WHILE LPAREN superExpression RPAREN block'''
 
 def p_FOR_LOOP(p):
     '''forLoop : FOR LPAREN ID EQUAL exp TO exp RPAREN block'''
 
 def p_RETURN_FUNC(p):
-    '''returnFunc : RETURN LPAREN expression RPAREN SEMICOLON'''
+    '''returnFunc : RETURN LPAREN superExpression RPAREN SEMICOLON'''
 
 def p_READ_INPUT(p):
     '''readInput : READ LPAREN variable RPAREN SEMICOLON'''
+
+
+def p_SUPER_EXPRESSION(p):
+    '''superExpression : expression qnp7_push_logicOperation_apply
+                 | expression LOGICOPERATOR qnp2_push_operations expression qnp7_push_logicOperation_apply'''
 
 def p_EXPRESSION(p):
     '''expression : exp qnp6_push_operationtypeRELOP_apply
                  | exp RELOP qnp2_push_operations exp qnp6_push_operationtypeRELOP_apply'''
 
 def p_CONDITION(p):
-    '''condition : IF LPAREN expression ifnp1 RPAREN block ifnp2End
-                 | IF LPAREN expression ifnp1 RPAREN block ELSE ifnp3Else block ifnp2End'''
+    '''condition : IF LPAREN superExpression ifnp1 RPAREN block ifnp2End
+                 | IF LPAREN superExpression ifnp1 RPAREN block ELSE ifnp3Else block ifnp2End'''
     
 
 
@@ -254,8 +261,8 @@ def p_FUNCTION_CALL(p):
                     | ID LPAREN RPAREN'''
 
 def p_FUNCTION_CALL2(p):
-    '''functionCall2 : expression RPAREN
-                     | expression COMMA functionCall2'''
+    '''functionCall2 : superExpression RPAREN
+                     | superExpression COMMA functionCall2'''
 
 def p_EXP(p):
     '''exp : term qnp4_push_operationtype1_apply exp2'''
@@ -272,7 +279,7 @@ def p_TERM2(p):
              | empty'''
 
 def p_FACTOR(p):
-    '''factor : LPAREN np_pushFakeBottom expression RPAREN np_popFakeBottom
+    '''factor : LPAREN np_pushFakeBottom superExpression RPAREN np_popFakeBottom
               | factor2 varcte
               | factor3'''
 
@@ -442,6 +449,13 @@ def p_QNP6_OPERATIONTYPERELOP_APPLY(p):
     if (quadruples.getOperationsStack().size() > 0):
         #("CHECK RELOP", quadruples.getOperationsStack().top())
         if (quadruples.getOperationsStack().top() == ">" or quadruples.getOperationsStack().top() == "<" or quadruples.getOperationsStack().top() == "<>" or quadruples.getOperationsStack().top() == "<=" or quadruples.getOperationsStack().top() == ">="):
+            quadruplesProcess()
+    
+def p_QNP7_LOGICOPERATION_APPLY(p):
+    '''qnp7_push_logicOperation_apply : empty'''
+    if (quadruples.getOperationsStack().size() > 0):
+        print("CHECK LOGIC", quadruples.getOperationsStack().top())
+        if (quadruples.getOperationsStack().top() == "&&" or quadruples.getOperationsStack().top() == "||"):
             quadruplesProcess()
 
 
