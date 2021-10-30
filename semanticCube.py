@@ -26,6 +26,31 @@ semantic = {
             "-": "float",
             "*": "float",
             "/": "float",
+            ">": "boolean",
+            ">=": "boolean",
+            "<": "boolean",
+            ">=": "boolean",
+            "<>": "boolean"
+        } 
+    },
+    "float": {
+        "int": {
+            "+": "float",
+            "-": "float",
+            "*": "float",
+            "/": "float",
+            "=": "valid",
+            ">": "boolean",
+            ">=": "boolean",
+            "<": "boolean",
+            ">=": "boolean",
+            "<>": "boolean",
+        },
+        "float": {
+            "+": "float",
+            "-": "float",
+            "*": "float",
+            "/": "float",
             "=": "valid",
             ">": "boolean",
             ">=": "boolean",
@@ -33,5 +58,5 @@ semantic = {
             ">=": "boolean",
             "<>": "boolean"
         } 
-    }
+    },
 }

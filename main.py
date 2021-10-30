@@ -272,7 +272,7 @@ def p_TERM2(p):
              | empty'''
 
 def p_FACTOR(p):
-    '''factor : LPAREN expression RPAREN
+    '''factor : LPAREN np_pushFakeBottom expression RPAREN np_popFakeBottom
               | factor2 varcte
               | factor3'''
 
@@ -391,6 +391,16 @@ def p_QNP1_PUSH(p):
 def p_QNP2_PUSH_OPERATIONS(p):
     '''qnp2_push_operations : empty'''
     quadruples.getOperationsStack().push(p[-1])
+
+def p_PUSH_FAKE_BOTTOM(p):
+    '''np_pushFakeBottom : empty'''
+    quadruples.getOperationsStack().push(p[-1])
+    quadruples.printStacks()
+
+def p_PUSH_FAKE_POP(p):
+    '''np_popFakeBottom : empty'''
+    top = quadruples.getOperationsStack().top()
+    quadruples.getOperationsStack().pop()
 
 def quadruplesProcess():
     print("ENTER PROCESS")

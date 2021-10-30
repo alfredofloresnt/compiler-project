@@ -1,14 +1,9 @@
 program MyRlike;
 vars int: i, j, k;
 function void test123(int:m)
-vars int:n;
+vars float:n;
 {
-    if (i * j > n + m ){
-        j = k;
-    } else {
-        m = i;
-    }
-    n = i + k;
+    n = ((i + j) / n) * m;
 }
 main(){
 
