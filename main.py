@@ -230,7 +230,7 @@ def p_PRINT_ON_SCREEN3(p):
               | RPAREN SEMICOLON'''
 
 def p_WHILE_LOOP(p):
-    '''whileLoop : WHILE LPAREN superExpression RPAREN block'''
+    '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
 
 def p_FOR_LOOP(p):
     '''forLoop : FOR LPAREN ID EQUAL exp TO exp RPAREN block'''
@@ -279,7 +279,7 @@ def p_TERM2(p):
              | empty'''
 
 def p_FACTOR(p):
-    '''factor : LPAREN np_pushFakeBottom superExpression RPAREN np_popFakeBottom
+    '''factor : LPAREN npPushFakeBottom superExpression RPAREN npPopFakeBottom
               | factor2 varcte
               | factor3'''
 
@@ -400,12 +400,12 @@ def p_QNP2_PUSH_OPERATIONS(p):
     quadruples.getOperationsStack().push(p[-1])
 
 def p_PUSH_FAKE_BOTTOM(p):
-    '''np_pushFakeBottom : empty'''
+    '''npPushFakeBottom : empty'''
     quadruples.getOperationsStack().push(p[-1])
     quadruples.printStacks()
 
 def p_PUSH_FAKE_POP(p):
-    '''np_popFakeBottom : empty'''
+    '''npPopFakeBottom : empty'''
     top = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
 
@@ -510,18 +510,14 @@ def p_IFNP3_ELSE(p):
     quadruples.getJumpsStack().push(cont - 1)
     quadruples.fillQuad(false, cont)
 
-def p_RELOP_ADD(p):
-    '''relopnp : empty'''
-    quadruples.getOperationsStack().push(p[-1])
-
 # Neuralgic point for WHILE statement
 def p_WHILENP1(p):
-    '''ifnpWhile1 : empty'''
-    cont = quadruples.getQuad().size()
+    '''npWhile1 : empty'''
+    cont = quadruples.getQuad().size() + 1
     quadruples.getJumpsStack().push(cont)
 
 def p_WHILENP2(p):
-    '''ifnpWhile2 : empty'''
+    '''npWhile2 : empty'''
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (expType != 'boolean'):
@@ -530,17 +526,17 @@ def p_WHILENP2(p):
         result = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
         quadruples.generateQuad('GoToF', result, 'empty', None)
-        cont = quadruples.getQuad().size()
+        cont = quadruples.getQuad().size() + 1
         quadruples.getJumpsStack().push(cont - 1)
 
 def p_WHILENP3(p):
-    '''ifnpWhile3 : empty'''
+    '''npWhile3 : empty'''
     end = quadruples.getJumpsStack().top()
     quadruples.getJumpsStack().pop()
     ret = quadruples.getJumpsStack().top()
     quadruples.getJumpsStack().pop()
-    cont = quadruples.getQuad().size()
     quadruples.generateQuad('GoTo', 'empty', 'empty', ret)
+    cont = quadruples.getQuad().size() + 1
     quadruples.fillQuad(end, cont)
 
 # Build Yacc

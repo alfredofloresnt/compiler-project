@@ -1,11 +1,12 @@
 program MyRlike;
 vars int: i, j, k;
 function void test123(int:m)
-vars float:n;
+vars int:n;
 {
-    if (m > n || n <> j){
-
+    while (m > n || n <> j){
+        i = j;
     }
+    k = n;
 }
 main(){
 
