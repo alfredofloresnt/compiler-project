@@ -233,7 +233,7 @@ def p_WHILE_LOOP(p):
     '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
 
 def p_FOR_LOOP(p):
-    '''forLoop : FOR LPAREN ID EQUAL exp TO exp RPAREN block'''
+    '''forLoop : FOR LPAREN ID np1For EQUAL exp np2For TO exp np3For RPAREN block np4For'''
 
 def p_RETURN_FUNC(p):
     '''returnFunc : RETURN LPAREN superExpression RPAREN SEMICOLON'''
@@ -511,12 +511,12 @@ def p_IFNP3_ELSE(p):
     quadruples.fillQuad(false, cont)
 
 # Neuralgic point for WHILE statement
-def p_WHILENP1(p):
+def p_NP1_WHILE(p):
     '''npWhile1 : empty'''
     cont = quadruples.getQuad().size() + 1
     quadruples.getJumpsStack().push(cont)
 
-def p_WHILENP2(p):
+def p_NP2_WHILE(p):
     '''npWhile2 : empty'''
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
@@ -529,7 +529,7 @@ def p_WHILENP2(p):
         cont = quadruples.getQuad().size() + 1
         quadruples.getJumpsStack().push(cont - 1)
 
-def p_WHILENP3(p):
+def p_NP3_WHILE(p):
     '''npWhile3 : empty'''
     end = quadruples.getJumpsStack().top()
     quadruples.getJumpsStack().pop()
@@ -538,6 +538,79 @@ def p_WHILENP3(p):
     quadruples.generateQuad('GoTo', 'empty', 'empty', ret)
     cont = quadruples.getQuad().size() + 1
     quadruples.fillQuad(end, cont)
+
+# Neuralgic points for FOR statement
+def p_NP1_FOR(p):
+    '''np1For : empty'''
+    idType = None
+    # Check if variable exist in local function if not checks global
+    if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])):
+        idType = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])
+    elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1]) != None):
+        idType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
+    if (idType != None):
+        if (idType != 'int' and idType != 'float'):
+            print("Semantic Error: Type mismatch, variable", p[-1], "is not a numeric value")
+        else:
+            quadruples.getOperandsStack().push(p[-1])
+            quadruples.getTypeStack().push(idType)
+    else:
+        print("Semantic Error: Type mismatch, variable", p[-1], "does not exist")
+
+def p_NP2_FOR(p):
+    '''np2For : empty'''
+    expType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    if (expType != "int" and expType != "float"):
+        print("Semantic Error: Type mismatch, variable", quadruples.getOperandsStack().top(), "is not a numeric value")
+    else:
+        exp = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        VControl = quadruples.getOperandsStack().top()
+        controlType = quadruples.getTypeStack().top()
+        typeRes = sc.getType( controlType, expType, "=")
+        if (typeRes != None):
+            quadruples.generateQuad("=", exp, "empty", VControl)
+        else:
+            print("Semantic Error: Type mismatch")
+
+def p_NP3_FOR(p):
+    '''np3For : empty'''
+    expType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    VControl = "VControl" # Pending variable. Where is going to be stored?
+    VFinal = "VFinal" # Pending variable. Where is going to be stored?
+    tx = "tx" # Pending variable. Where is going to be stored?
+    if (expType == "int" or expType == "float"):
+        exp = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.generateQuad("=", exp, "empty", VFinal)
+        quadruples.generateQuad("=", VControl, "empty", tx)
+        cont = quadruples.getQuad().size() + 1
+        quadruples.getJumpsStack().push(cont - 1)
+        quadruples.generateQuad("GoToF", tx, "empty", None)
+        cont = quadruples.getQuad().size() + 1
+        quadruples.getJumpsStack().push(cont - 1)
+    else:
+        print("Semantic Error: Type mismatch")
+
+def p_NP4_FOR(p):
+    '''np4For : empty'''
+    VControl = "VControl"
+    ty = "ty"
+    quadruples.generateQuad("+", VControl, 1, ty)
+    quadruples.generateQuad("=", ty, "empty", VControl)
+    quadruples.generateQuad("=", ty, "empty", quadruples.getOperandsStack().top()) # Original ID
+    fin = quadruples.getJumpsStack().top()
+    quadruples.getJumpsStack().pop()
+    ret = quadruples.getJumpsStack().top()
+    quadruples.getJumpsStack().pop()
+    quadruples.generateQuad("GoTo", "empty", "empty", ret)
+    cont = quadruples.getQuad().size() + 1
+    quadruples.fillQuad(fin, cont)
+    quadruples.getOperandsStack().pop() # Remove original ID
+    quadruples.getTypeStack().pop()
+ 
 
 # Build Yacc
 parser = yacc.yacc()

@@ -54,7 +54,7 @@ class Quadruples:
     def generateQuad(self, operator, leftOperand, rightOperand, result):
         self.quad.push([operator, leftOperand, rightOperand, result])
     def fillQuad(self, index, val):
-        print("fillQuad", index, val)
+        #print("fillQuad", index, val)
         self.quad.get(index - 1)[3] = val
     def printQuads(self):
         for i in range(self.quad.size()):

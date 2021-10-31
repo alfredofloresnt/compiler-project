@@ -3,10 +3,9 @@ vars int: i, j, k;
 function void test123(int:m)
 vars int:n;
 {
-    while (m > n || n <> j){
-        i = j;
+    for (i = k to j){
+        
     }
-    k = n;
 }
 main(){
 
