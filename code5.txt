@@ -1,0 +1,9 @@
+program MyRlike;
+vars char: i, j, k;
+function void test(int:j)
+{
+    print(i);
+}
+main(){
+    test(k)
+}

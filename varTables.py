@@ -41,7 +41,21 @@ class Vars:
         if (name in self.items):
             return self.items[name]
         return None
+    def getSize(self):
+        return len(self.items)
     def printVars(self):
+        print(self.items)
+
+class Params:
+    def __init__(self):
+        self.items = []
+    def insert(self, item):
+        self.items.append(item)
+    def getParamByIndex(self, index):
+        return self.items[index]
+    def getSize(self):
+        return len(self.items)
+    def printParams(self):
         print(self.items)
 
 class DirFunc:
@@ -59,10 +73,23 @@ class DirFunc:
             return self.dirFuncData[name]["table"]
         else:
             return None
+    def addParametersTable(self, name, data):
+        if (name in self.dirFuncData):
+            self.dirFuncData[name]["parameterTable"] = data
+            return self.dirFuncData[name]["parameterTable"]
+        else:
+            return None
     def getVarsTableByFunctionName(self, name):
         if (name in self.dirFuncData):
             return self.dirFuncData[name]["table"]
-        return None
+    def setTotParameters(self, name, val):
+        self.dirFuncData[name]["totParameters"] = val
+    def setTotLocalVars(self, name, val):
+        self.dirFuncData[name]["totLocalVars"] = val - self.dirFuncData[name]["totParameters"]
+    def setCountQuadruples(self, name, val):
+        self.dirFuncData[name]["startAtQuad"] = val 
+    def getStartAtQuad(self, name):
+        return self.dirFuncData[name]["startAtQuad"]
     def printDirFunc(self):
         print(self.dirFuncData)
     

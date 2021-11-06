@@ -5,7 +5,7 @@ import varTables as vt
 import quadruples as qp
 import semanticCube as sc
 import random
-
+import traceback
 # Lexer
 
 # Definicion de tokens
@@ -84,13 +84,13 @@ def t_ctefloat(t):
     return t
 
 def t_cteint(t):
-    r'\d+'
+    r'[0-9][0-9]*'
     t.value = int(t.value)
     return t
 
 def t_ctechar(t):
-    r'^[a-zA-Z]+$'
-    t.value = int(t.value)
+    r'\'[a-zA-Z]\''
+    t.value = t.value
     return t
 
 def t_ID(t):
@@ -120,10 +120,15 @@ print("Lexer has been genereated!")
 dirFunc = None
 rowVarsAux = {}
 currentFunc = None
+currentFuncAux = None
 currentType = None
 currentVarTable = None
+currentParamTable = None
 globalFunctionName = None
+paramCounter = 0
+funcCalled = None
 quadruples = qp.Quadruples()
+quadruples.generateQuad('GoTo', 'empty', 'empty', None)
 
 # YACC
 def p_PROGRAM(p):
@@ -139,7 +144,7 @@ def p_PROGRAM3(p):
     '''program3 : functions program4'''
     
 def p_PROGRAM4(p):
-    '''program4 : MAIN LPAREN RPAREN block'''
+    '''program4 : MAIN npGoToMain npChangeCurrentFunctionToMain LPAREN RPAREN block'''
 
 def p_DEC_VARS(p):
     '''decVars : VARS np3CreateVarsTable decVars2'''   
@@ -169,12 +174,14 @@ def p_FUNCTIONS(p):
                 | function'''
     
 def p_FUNCTION(p):
-    '''function : FUNCTION type ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN decVars block np12DeleteCurrentVarsTable
-                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN decVars block np12DeleteCurrentVarsTable'''
+    '''function : FUNCTION type ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters decVars npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc
+                | FUNCTION type ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc
+                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters decVars npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc
+                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc'''
 
 def p_PARAM(p):
-    '''param : type TWOPOINTS ID np4AddCurrentTable empty
-             | type TWOPOINTS ID np4AddCurrentTable COMMA param'''
+    '''param : type TWOPOINTS ID npAddParametersCurrentTable empty
+             | type TWOPOINTS ID npAddParametersCurrentTable COMMA param'''
 
 
 def p_TYPE(p):
@@ -222,8 +229,8 @@ def p_PRINT_ON_SCREEN(p):
     '''print : PRINT LPAREN print2'''
 
 def p_PRINT_ON_SCREEN2(p):
-    '''print2 : expression print3
-              | ctestring print3'''
+    '''print2 : expression npPrint print3
+              | ctestring npPrint print3'''
 
 def p_PRINT_ON_SCREEN3(p):
     '''print3 : COMMA print2
@@ -257,12 +264,12 @@ def p_CONDITION(p):
 
 
 def p_FUNCTION_CALL(p):
-    '''functionCall : ID LPAREN functionCall2
-                    | ID LPAREN RPAREN'''
+    '''functionCall : ID npVerifyFunc npCreateEra LPAREN functionCall2 RPAREN npVerifyParamsCoherency
+                    | ID npVerifyFunc npCreateEra LPAREN RPAREN npVerifyParamsCoherency'''
 
 def p_FUNCTION_CALL2(p):
-    '''functionCall2 : superExpression RPAREN
-                     | superExpression COMMA functionCall2'''
+    '''functionCall2 : superExpression npVerifyParam 
+                     | superExpression npVerifyParam COMMA npMoveNextParam functionCall2'''
 
 def p_EXP(p):
     '''exp : term qnp4_push_operationtype1_apply exp2'''
@@ -281,16 +288,15 @@ def p_TERM2(p):
 def p_FACTOR(p):
     '''factor : LPAREN npPushFakeBottom superExpression RPAREN npPopFakeBottom
               | factor2 varcte
-              | factor3'''
+              | factor3
+              | varcte'''
 
 def p_FACTOR2(p):
-    '''factor2 : OPERATORTYPE1
-               | empty'''
+    '''factor2 : OPERATORTYPE1'''
 
 def p_FACTOR3(p):
-    '''factor3 : ID qnp1_push
-                | ID qnp1_push LPAREN factor4
-                | ID qnp1_push LSQUAREBRACKET factor5'''
+    '''factor3 : ID LPAREN factor4
+                | ID LSQUAREBRACKET factor5'''
 
 def p_FACTOR4(p):
     '''factor4 : expression COMMA factor4
@@ -301,10 +307,10 @@ def p_FACTOR5(p):
                 | expression RSQUAREBRACKET'''
 
 def p_VARCTE(p):
-    '''varcte : ID
-              | cteint
-              | ctefloat
-              | ctechar'''
+    '''varcte : ID qnp1_push
+              | cteint npAddCTEINT
+              | ctefloat npAddCTEFLOAT
+              | ctechar npAddCTECHAR'''
 
 def p_EMPTY(p):
     '''empty :'''
@@ -315,7 +321,14 @@ def p_EMPTY(p):
 def p_TEST(p):
     '''np0Test : empty'''
     print("BBBB")
-    quadruples.printStacks()
+
+def p_GOTO_MAIN(p):
+    '''npGoToMain : empty'''
+    cont = quadruples.getQuad().size() + 1
+    quadruples.fillQuad(1, cont)
+
+
+
 
 def p_NP2_CREATE_MAIN_VARS_TABLE(p):
     '''np2CreateMainVarsTable : empty'''
@@ -327,19 +340,33 @@ def p_NP2_CREATE_MAIN_VARS_TABLE(p):
     globalFunctionName = p[-1]
     currentFunc = p[-1]
 
+def p_CHANGE_CURRENT_FUNCTION_TO_MAIN(p):
+    '''npChangeCurrentFunctionToMain : empty'''
+    global currentFunc
+    global currentVarTable
+    global currentParamTable
+    #print("globalFunctionName", currentFunc, globalFunctionName)
+    currentFunc = globalFunctionName
+    currentVarTable = dirFunc.getFunctionByName(globalFunctionName)["table"]
+    currentParamTable = dirFunc.getFunctionByName(globalFunctionName)["parameterTable"]
+
 def p_NP3_CREATE_VARS_TABLE(p):
     '''np3CreateVarsTable : empty'''
     global dirFunc
     global currentVarTable
+    global currentParamTable
     row = dirFunc.getFunctionByName(currentFunc)
     if (row["table"] == None):
+        currentParamTable = vt.Params() 
         currentVarTable = vt.Vars()
         dirFunc.addVarsTable(currentFunc, currentVarTable)
+        dirFunc.addParametersTable(currentFunc, currentParamTable)
         
 
 def p_NP4_ADD_CURRENT_TABLE(p):
     '''np4AddCurrentTable : empty'''
     global currentVarTable
+    global currentParamTable
     global currentType
     # Check if id-name in current VarsTable
     id = currentVarTable.getVariableByName(p[-1])
@@ -347,6 +374,86 @@ def p_NP4_ADD_CURRENT_TABLE(p):
         print("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
         currentVarTable.insert({"name": p[-1], "type": currentType})
+
+def p_ADD_PARAMETERS_CURRENT_TABLE(p):
+    '''npAddParametersCurrentTable : empty '''
+    global currentVarTable
+    global currentParamTable
+    global currentType
+    # Check if id-name in current VarsTable
+    id = currentVarTable.getVariableByName(p[-1])
+    if (id != None):
+        print("Semantic Error: Multiple variable declaration of " + p[-1])
+    else:
+        currentVarTable.insert({"name": p[-1], "type": currentType})
+        currentParamTable.insert(currentType)
+        
+
+def p_COUNT_PARAMETERS(p):
+    '''npCountParameters : empty'''
+    totParams = currentParamTable.getSize()
+    dirFunc.setTotParameters(currentFunc, totParams)
+
+def p_COUNT_LOCAL_VARS(p):
+    '''npCountLocalVars : empty'''
+    totLocalVars = currentVarTable.getSize()
+    dirFunc.setTotLocalVars(currentFunc, totLocalVars)
+
+def p_COUNT_QUADRUPLES(p):
+    '''npCountQuadruples : empty'''
+    cont = quadruples.getQuad().size() + 1
+    dirFunc.setCountQuadruples(currentFunc, cont)
+
+def p_END_PROC(p):
+    '''npEndProc : empty'''
+    # To-do: Clear current varTable
+    quadruples.generateQuad('ENDFUNC', 'empty', 'empty', 'empty')
+
+def p_VERIFY_FUNCTION(p):
+    '''npVerifyFunc : empty'''
+    global funcCalled
+    if (dirFunc.getFunctionByName(p[-1]) == None):
+        print("Semantic Error: Function not declared")
+    else:
+        funcCalled = p[-1]
+
+def p_CREATE_ERA(p):
+    '''npCreateEra : empty'''
+    global paramCounter
+    global currentFuncAux
+    global currentFunc
+    global currentParamTable
+    quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
+    paramCounter = 1
+    currentFuncAux = currentFunc
+    currentFunc = funcCalled
+    currentParamTable = dirFunc.getFunctionByName(funcCalled)["parameterTable"]
+
+def p_VERIFY_PARAM(p):
+    '''npVerifyParam : empty'''
+    global paramCounter
+    argument = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    argumentType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    paramTypeInTable = currentParamTable.getParamByIndex(paramCounter - 1)
+    if (argumentType == paramTypeInTable):
+        quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
+    else:
+        print("Semantic Error: Wrong funtion signature", argumentType, "is not", paramTypeInTable)
+
+def p_MOVE_NEXT_PARAM(p):
+    '''npMoveNextParam : empty'''
+    global paramCounter
+    paramCounter += 1
+
+def p_VERIFY_PARAMS_COHERENCY(p):
+    '''npVerifyParamsCoherency : empty'''
+    paramTable = dirFunc.getFunctionByName(funcCalled)['parameterTable']
+    if (paramCounter != paramTable.getSize()):
+        print("Semantic Error: Params number does not match", paramCounter, paramTable.getSize())
+    else:
+        quadruples.generateQuad("GOSUB", funcCalled, 'empty', dirFunc.getStartAtQuad(funcCalled))
 
 def p_NP5_SET_CURRENT_TYPE(p):
     '''np5SetCurrentType : empty'''
@@ -384,6 +491,22 @@ def p_error(t):
     raise Exception("Syntax error")
 
 # Quadruples Neuralgic points 
+def p_ADD_CTEINT(p):
+    '''npAddCTEINT : empty'''
+    quadruples.getOperandsStack().push(p[-1])
+    quadruples.getTypeStack().push('int')
+
+def p_ADD_CTEFLOAT(p):
+    '''npAddCTEFLOAT : empty'''
+    quadruples.getOperandsStack().push(p[-1])
+    quadruples.getTypeStack().push('float')
+
+def p_ADD_CTECHAR(p):
+    '''npAddCTECHAR : empty'''
+    print(p[-1])
+    quadruples.getOperandsStack().push(p[-1])
+    quadruples.getTypeStack().push('char')
+
 def p_QNP1_PUSH(p):
     '''qnp1_push : empty'''
     quadruples.getOperandsStack().push(p[-1])
@@ -402,7 +525,6 @@ def p_QNP2_PUSH_OPERATIONS(p):
 def p_PUSH_FAKE_BOTTOM(p):
     '''npPushFakeBottom : empty'''
     quadruples.getOperationsStack().push(p[-1])
-    quadruples.printStacks()
 
 def p_PUSH_FAKE_POP(p):
     '''npPopFakeBottom : empty'''
@@ -410,7 +532,7 @@ def p_PUSH_FAKE_POP(p):
     quadruples.getOperationsStack().pop()
 
 def quadruplesProcess():
-    print("ENTER PROCESS")
+    #print("ENTER PROCESS")
     rightOperand = quadruples.getOperandsStack().top()
     quadruples.getOperandsStack().pop()
     rightOperandType = quadruples.getTypeStack().top()
@@ -478,6 +600,17 @@ def p_ASSIGMENTNP(p):
         quadruples.generateQuad(equalSymbol, result, 'empty', id)
     else:
         print("Semantic Error: Type mismatch", resType, "cannot be", idType)
+
+# Neuralgic point for PRINT statement
+def p_print(p):
+    '''npPrint : empty'''
+    quadruples.getOperationsStack().push('print')
+    if (quadruples.getOperandsStack().size() > 0):
+        res = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.generateQuad('PRINT', 'empty', 'empty', res)
+        quadruples.getOperationsStack().pop()
+
         
 # Neuralgic point for IF statement
 def p_IFNP1(p):
@@ -617,7 +750,7 @@ parser = yacc.yacc()
 print("Yacc has been generated!")
 
 
-codeToCompile = open('code3.txt','r')
+codeToCompile = open('code5.txt','r')
 data = str(codeToCompile.read())
 lexer.input(data)
 # Debug tokens
@@ -630,7 +763,10 @@ try:
     
     parser.parse(data)
     quadruples.printQuads()
-    # dirFunc.printDirFunc()
+    #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
+    #dirFunc.getFunctionByName("test123")['table'].printVars()
+    dirFunc.printDirFunc()
     print('Code passed!')
 except Exception as e:
+    traceback.print_exc()
     print('Error in code!', e)
