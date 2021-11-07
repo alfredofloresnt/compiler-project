@@ -32,6 +32,8 @@
 #
 #list1.listprint()
 
+import pprint
+
 class Vars:
     def __init__(self):
         self.items = {}
@@ -44,7 +46,7 @@ class Vars:
     def getSize(self):
         return len(self.items)
     def printVars(self):
-        print(self.items)
+        pprint.pprint(self.items)
 
 class Params:
     def __init__(self):
@@ -56,7 +58,7 @@ class Params:
     def getSize(self):
         return len(self.items)
     def printParams(self):
-        print(self.items)
+        pprint.pprint(self.items)
 
 class DirFunc:
     def __init__(self):
@@ -91,8 +93,7 @@ class DirFunc:
     def getStartAtQuad(self, name):
         return self.dirFuncData[name]["startAtQuad"]
     def printDirFunc(self):
-        print(self.dirFuncData)
-    
+        pprint.pprint(self.dirFuncData)
 
 #class MyFuncTables:
 

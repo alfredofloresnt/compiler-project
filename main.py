@@ -4,6 +4,8 @@ import ply.yacc as yacc
 import varTables as vt
 import quadruples as qp
 import semanticCube as sc
+import constantTable as ct
+import addressing
 import random
 import traceback
 # Lexer
@@ -129,6 +131,7 @@ paramCounter = 0
 funcCalled = None
 quadruples = qp.Quadruples()
 quadruples.generateQuad('GoTo', 'empty', 'empty', None)
+constantsTable = ct.ConstantsTable()
 
 # YACC
 def p_PROGRAM(p):
@@ -373,7 +376,10 @@ def p_NP4_ADD_CURRENT_TABLE(p):
     if (id != None):
         print("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
-        currentVarTable.insert({"name": p[-1], "type": currentType})
+        if (currentFunc == globalFunctionName):
+            currentVarTable.insert({"name": p[-1], "type": currentType, "address": addressing.handleAddressing(currentType, "global")})
+        else:
+            currentVarTable.insert({"name": p[-1], "type": currentType, "address": addressing.handleAddressing(currentType, "local")})
 
 def p_ADD_PARAMETERS_CURRENT_TABLE(p):
     '''npAddParametersCurrentTable : empty '''
@@ -385,7 +391,7 @@ def p_ADD_PARAMETERS_CURRENT_TABLE(p):
     if (id != None):
         print("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
-        currentVarTable.insert({"name": p[-1], "type": currentType})
+        currentVarTable.insert({"name": p[-1], "type": currentType, "address": addressing.handleAddressing(currentType, "local")})
         currentParamTable.insert(currentType)
         
 
@@ -495,17 +501,23 @@ def p_ADD_CTEINT(p):
     '''npAddCTEINT : empty'''
     quadruples.getOperandsStack().push(p[-1])
     quadruples.getTypeStack().push('int')
+    if (constantsTable.getConstantByName(p[-1]) == None):
+        constantsTable.insert(p[-1], addressing.handleAddressing('int', 'constant'))
 
 def p_ADD_CTEFLOAT(p):
     '''npAddCTEFLOAT : empty'''
     quadruples.getOperandsStack().push(p[-1])
     quadruples.getTypeStack().push('float')
+    if (constantsTable.getConstantByName(p[-1]) == None):
+        constantsTable.insert(p[-1], addressing.handleAddressing('float', 'constant'))
 
 def p_ADD_CTECHAR(p):
     '''npAddCTECHAR : empty'''
     print(p[-1])
     quadruples.getOperandsStack().push(p[-1])
     quadruples.getTypeStack().push('char')
+    if (constantsTable.getConstantByName(p[-1]) == None):
+        constantsTable.insert(p[-1], addressing.handleAddressing('char', 'constant'))
 
 def p_QNP1_PUSH(p):
     '''qnp1_push : empty'''
@@ -545,7 +557,7 @@ def quadruplesProcess():
     quadruples.getOperationsStack().pop()
     resultType = sc.getType(leftOperandType, rightOperandType, operation)
     if (resultType != None):
-        result = random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
+        result =  addressing.handleAddressing(resultType, "temporal") #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
         quadruples.generateQuad(operation, leftOperand, rightOperand, result)
         quadruples.getOperandsStack().push(result)
         quadruples.getTypeStack().push(resultType)
@@ -764,8 +776,9 @@ try:
     parser.parse(data)
     quadruples.printQuads()
     #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
-    #dirFunc.getFunctionByName("test123")['table'].printVars()
-    dirFunc.printDirFunc()
+    dirFunc.getFunctionByName("dos")['table'].printVars()
+    #dirFunc.printDirFunc()
+    constantsTable.printConstantTable()
     print('Code passed!')
 except Exception as e:
     traceback.print_exc()
