@@ -150,7 +150,8 @@ def p_PROGRAM4(p):
     '''program4 : MAIN npGoToMain npChangeCurrentFunctionToMain LPAREN RPAREN block'''
 
 def p_DEC_VARS(p):
-    '''decVars : VARS np3CreateVarsTable decVars2'''   
+    '''decVars : VARS np3CreateVarsTable decVars2
+                | empty'''   
 
 def p_DEC_VARS2(p):
     '''decVars2 : type TWOPOINTS decVars3'''
@@ -178,13 +179,12 @@ def p_FUNCTIONS(p):
     
 def p_FUNCTION(p):
     '''function : FUNCTION type ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters decVars npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc
-                | FUNCTION type ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc
-                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters decVars npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc
-                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc'''
+                | FUNCTION VOID np8SetCurrentTypeVoid ID np9AddFunction np3CreateVarsTable LPAREN param RPAREN npCountParameters decVars npCountLocalVars npCountQuadruples block np12DeleteCurrentVarsTable npEndProc'''
 
 def p_PARAM(p):
     '''param : type TWOPOINTS ID npAddParametersCurrentTable empty
-             | type TWOPOINTS ID npAddParametersCurrentTable COMMA param'''
+             | type TWOPOINTS ID npAddParametersCurrentTable COMMA param
+             | empty'''
 
 
 def p_TYPE(p):
@@ -456,7 +456,7 @@ def p_MOVE_NEXT_PARAM(p):
 def p_VERIFY_PARAMS_COHERENCY(p):
     '''npVerifyParamsCoherency : empty'''
     paramTable = dirFunc.getFunctionByName(funcCalled)['parameterTable']
-    if (paramCounter != paramTable.getSize()):
+    if (paramTable.getParamByIndex(paramCounter) != None):
         print("Semantic Error: Params number does not match", paramCounter, paramTable.getSize())
     else:
         quadruples.generateQuad("GOSUB", funcCalled, 'empty', dirFunc.getStartAtQuad(funcCalled))
@@ -609,7 +609,16 @@ def p_ASSIGMENTNP(p):
     quadruples.getOperationsStack().pop()
     resIDType = sc.getType(idType, resType, '=')
     if (equalSymbol == "=" and resIDType == "valid"):
-        quadruples.generateQuad(equalSymbol, result, 'empty', id)
+        # Get local or global address
+        if (currentVarTable.getVariableByName(id)):
+            address = currentVarTable.getVariableByName(id)['address']
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)):
+            address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)['address']
+        else:
+            print("Semantic Error: Variable not found in local or global scopes")
+
+        quadruples.generateQuad(equalSymbol, result, 'empty', id) #id
+        
     else:
         print("Semantic Error: Type mismatch", resType, "cannot be", idType)
 
@@ -620,7 +629,12 @@ def p_print(p):
     if (quadruples.getOperandsStack().size() > 0):
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
-        quadruples.generateQuad('PRINT', 'empty', 'empty', res)
+        # Get local or global address
+        if (currentVarTable.getVariableByName(res)):
+            address = currentVarTable.getVariableByName(res)['address']
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)):
+            address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
+        quadruples.generateQuad('PRINT', 'empty', 'empty', res) #res
         quadruples.getOperationsStack().pop()
 
         
@@ -690,12 +704,12 @@ def p_NP1_FOR(p):
     idType = None
     # Check if variable exist in local function if not checks global
     if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])):
-        idType = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])
+        idType = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])['type']
     elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1]) != None):
         idType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
     if (idType != None):
         if (idType != 'int' and idType != 'float'):
-            print("Semantic Error: Type mismatch, variable", p[-1], "is not a numeric value")
+            print("Semantic Error: Type mismatch, variable", idType, ":", p[-1], "is not a numeric value")
         else:
             quadruples.getOperandsStack().push(p[-1])
             quadruples.getTypeStack().push(idType)
@@ -776,9 +790,9 @@ try:
     parser.parse(data)
     quadruples.printQuads()
     #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
-    dirFunc.getFunctionByName("dos")['table'].printVars()
+    #dirFunc.getFunctionByName("dos")['table'].printVars()
     #dirFunc.printDirFunc()
-    constantsTable.printConstantTable()
+    #constantsTable.printConstantTable()
     print('Code passed!')
 except Exception as e:
     traceback.print_exc()

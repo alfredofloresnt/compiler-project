@@ -1,15 +1,8 @@
 program MyRlike;
 vars int: i, j, k;
-function void test(int:j)
-{
-    print(i);
-}
-function void dos(int:p)
-vars float:m;
-{
-    i = 10;
-    m = i + k;
-}
+    float: g;
+
 main(){
-    test(k)
+    for (i = 0 to 10){
+    }
 }

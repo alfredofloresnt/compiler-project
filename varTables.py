@@ -54,7 +54,11 @@ class Params:
     def insert(self, item):
         self.items.append(item)
     def getParamByIndex(self, index):
-        return self.items[index]
+        # Check if points to null
+        if (index <= len(self.items) - 1):
+            return self.items[index]
+        else:
+            return None
     def getSize(self):
         return len(self.items)
     def printParams(self):
