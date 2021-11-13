@@ -96,6 +96,8 @@ class DirFunc:
         self.dirFuncData[name]["startAtQuad"] = val 
     def getStartAtQuad(self, name):
         return self.dirFuncData[name]["startAtQuad"]
+    def getMainName(self):
+        return list(self.dirFuncData.keys())[0]
     def printDirFunc(self):
         pprint.pprint(self.dirFuncData)
 

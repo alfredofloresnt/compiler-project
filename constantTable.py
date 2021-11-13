@@ -12,7 +12,9 @@ class ConstantsTable:
             return self.constants[name]
         else:
             return None
-    
+    def getConstants(self):
+        return self.constants
+        
     def printConstantTable(self):
         pprint.pprint(self.constants)
 

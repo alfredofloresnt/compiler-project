@@ -6,6 +6,7 @@ import quadruples as qp
 import semanticCube as sc
 import constantTable as ct
 import addressing
+import virtualMachine as vm
 import random
 import traceback
 # Lexer
@@ -147,7 +148,7 @@ def p_PROGRAM3(p):
     '''program3 : functions program4'''
     
 def p_PROGRAM4(p):
-    '''program4 : MAIN npGoToMain npChangeCurrentFunctionToMain LPAREN RPAREN block'''
+    '''program4 : MAIN npGoToMain npChangeCurrentFunctionToMain LPAREN RPAREN block npEndMain'''
 
 def p_DEC_VARS(p):
     '''decVars : VARS np3CreateVarsTable decVars2
@@ -543,6 +544,21 @@ def p_PUSH_FAKE_POP(p):
     top = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
 
+def getAddress(name):
+    #print("name", name)
+    #constantsTable.printConstantTable()
+    if (constantsTable.getConstantByName(name)):
+        address = constantsTable.getConstantByName(name)['address']
+        return address
+    elif (currentVarTable.getVariableByName(name)):
+        address = currentVarTable.getVariableByName(name)['address']
+        return address
+    elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(name)):
+        address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(name)['address']
+        return address
+    else:
+        print("Semantic Error: Type mismatch, variable", name, "does not exist")
+
 def quadruplesProcess():
     #print("ENTER PROCESS")
     rightOperand = quadruples.getOperandsStack().top()
@@ -558,7 +574,11 @@ def quadruplesProcess():
     resultType = sc.getType(leftOperandType, rightOperandType, operation)
     if (resultType != None):
         result =  addressing.handleAddressing(resultType, "temporal") #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
-        quadruples.generateQuad(operation, leftOperand, rightOperand, result)
+        ###############
+        rightOperandAddress = getAddress(rightOperand)
+        leftOperandAddress = getAddress(leftOperand)
+        ###############
+        quadruples.generateQuad(operation, leftOperandAddress, rightOperandAddress, result)
         quadruples.getOperandsStack().push(result)
         quadruples.getTypeStack().push(resultType)
     else:
@@ -610,14 +630,14 @@ def p_ASSIGMENTNP(p):
     resIDType = sc.getType(idType, resType, '=')
     if (equalSymbol == "=" and resIDType == "valid"):
         # Get local or global address
-        if (currentVarTable.getVariableByName(id)):
-            address = currentVarTable.getVariableByName(id)['address']
-        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)):
-            address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)['address']
-        else:
-            print("Semantic Error: Variable not found in local or global scopes")
-
-        quadruples.generateQuad(equalSymbol, result, 'empty', id) #id
+        #if (currentVarTable.getVariableByName(id)):
+        #    address = currentVarTable.getVariableByName(id)['address']
+        #elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)):
+        #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)['address']
+        #else:
+        #    print("Semantic Error: Variable not found in local or global scopes")
+        address = getAddress(id)
+        quadruples.generateQuad(equalSymbol, result, 'empty', address) #id
         
     else:
         print("Semantic Error: Type mismatch", resType, "cannot be", idType)
@@ -629,11 +649,14 @@ def p_print(p):
     if (quadruples.getOperandsStack().size() > 0):
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
-        # Get local or global address
-        if (currentVarTable.getVariableByName(res)):
-            address = currentVarTable.getVariableByName(res)['address']
-        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)):
-            address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
+        address = getAddress(res)
+        # Get constant or local or global address
+        #if (constantsTable.getConstantByName(res)):
+        #    address = constantsTable.getConstantByName(res)['address']
+        #if (currentVarTable.getVariableByName(res)):
+        #    address = currentVarTable.getVariableByName(res)['address']
+        #elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)):
+        #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
         quadruples.generateQuad('PRINT', 'empty', 'empty', res) #res
         quadruples.getOperationsStack().pop()
 
@@ -771,6 +794,10 @@ def p_NP4_FOR(p):
     quadruples.getTypeStack().pop()
  
 
+def p_END_MAIN(p):
+    '''npEndMain : empty'''
+    quadruples.generateQuad("END", 'empty', 'empty', 'empty')
+
 # Build Yacc
 parser = yacc.yacc()
 print("Yacc has been generated!")
@@ -797,3 +824,7 @@ try:
 except Exception as e:
     traceback.print_exc()
     print('Error in code!', e)
+
+
+machine = vm.VirtualMachine()
+machine.beginMachine(quadruples.getQuad(), dirFunc, constantsTable.getConstants())
