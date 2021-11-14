@@ -15,22 +15,26 @@ semantic = {
             "*": "int",
             "/": "int",
             "=": "valid",
-            ">": "boolean",
-            ">=": "boolean",
-            "<": "boolean",
-            ">=": "boolean",
-            "<>": "boolean",
+            ">": "int",
+            ">=": "int",
+            "<": "int",
+            ">=": "int",
+            "<>": "int",
+            "==": 'int',
+            "&&": "int",
+            "||": "int"
         },
         "float": {
             "+": "float",
             "-": "float",
             "*": "float",
             "/": "float",
-            ">": "boolean",
-            ">=": "boolean",
-            "<": "boolean",
-            ">=": "boolean",
-            "<>": "boolean"
+            ">": "int",
+            ">=": "int",
+            "<": "int",
+            ">=": "int",
+            "<>": "int",
+            "==": 'int'
         } 
     },
     "float": {
@@ -40,11 +44,12 @@ semantic = {
             "*": "float",
             "/": "float",
             "=": "valid",
-            ">": "boolean",
-            ">=": "boolean",
-            "<": "boolean",
-            ">=": "boolean",
-            "<>": "boolean",
+            ">": "int",
+            ">=": "int",
+            "<": "int",
+            ">=": "int",
+            "<>": "int",
+            "==": 'int'
         },
         "float": {
             "+": "float",
@@ -52,22 +57,19 @@ semantic = {
             "*": "float",
             "/": "float",
             "=": "valid",
-            ">": "boolean",
-            ">=": "boolean",
-            "<": "boolean",
-            ">=": "boolean",
-            "<>": "boolean"
+            ">": "int",
+            ">=": "int",
+            "<": "int",
+            ">=": "int",
+            "<>": "int",
+            "==": 'int'
         } 
-    },
-    "boolean": {
-        "boolean": {
-            "&&": "boolean",
-            "||": "boolean"
-        }
     },
     "char": {
         "char": {
-            "=": "valid"
+            "=": "valid",
+            "<>": "int",
+            "==": 'int'
         }
     }
 }

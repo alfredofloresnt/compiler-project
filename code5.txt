@@ -1,13 +1,13 @@
 program MyRlike;
 vars int: i, j, k;
     float: g;
-function void test(){
-    j = 8;
+function void test(int:x){
+    j = 10 / 5;
 }
 main(){
-    if (k > 5){
-        i = 5 * 10;
-        test()
-    }
+    i = 0;
+    k = 20;
+    test(i)
+    
     
 }

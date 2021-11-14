@@ -500,29 +500,38 @@ def p_error(t):
 # Quadruples Neuralgic points 
 def p_ADD_CTEINT(p):
     '''npAddCTEINT : empty'''
-    quadruples.getOperandsStack().push(p[-1])
     quadruples.getTypeStack().push('int')
     if (constantsTable.getConstantByName(p[-1]) == None):
         constantsTable.insert(p[-1], addressing.handleAddressing('int', 'constant'))
+    addressINT = constantsTable.getConstantByName(p[-1])['address']
+    quadruples.getOperandsStack().push(addressINT)
+    #quadruples.getOperandsStack().push(p[-1]) # Add variable name (NOT ADDRESS) in quadruple
 
 def p_ADD_CTEFLOAT(p):
     '''npAddCTEFLOAT : empty'''
-    quadruples.getOperandsStack().push(p[-1])
+    
     quadruples.getTypeStack().push('float')
     if (constantsTable.getConstantByName(p[-1]) == None):
         constantsTable.insert(p[-1], addressing.handleAddressing('float', 'constant'))
+    addressFLOAT = constantsTable.getConstantByName(p[-1])['address']
+    quadruples.getOperandsStack().push(addressFLOAT)
+    #quadruples.getOperandsStack().push(p[-1]) # Add variable name (NOT ADDRESS) in quadruple
 
 def p_ADD_CTECHAR(p):
     '''npAddCTECHAR : empty'''
-    print(p[-1])
-    quadruples.getOperandsStack().push(p[-1])
     quadruples.getTypeStack().push('char')
     if (constantsTable.getConstantByName(p[-1]) == None):
         constantsTable.insert(p[-1], addressing.handleAddressing('char', 'constant'))
+    constantsTable.printConstantTable()
+    addressCHAR = constantsTable.getConstantByName(p[-1])['address']
+    quadruples.getOperandsStack().push(addressCHAR)
+    #quadruples.getOperandsStack().push(p[-1]) # Add variable name (NOT ADDRESS) in quadruple
 
 def p_QNP1_PUSH(p):
     '''qnp1_push : empty'''
-    quadruples.getOperandsStack().push(p[-1])
+    addressID = getAddress(p[-1])
+    quadruples.getOperandsStack().push(addressID)
+    #quadruples.getOperandsStack().push(p[-1]) # Add variable name (NOT ADDRESS) in quadruple
     # Check if variable is declared on local or global functions and add to stacks
     if (currentVarTable.getVariableByName(p[-1]) != None):
         quadruples.getTypeStack().push(currentVarTable.getVariableByName(p[-1])["type"])
@@ -545,12 +554,8 @@ def p_PUSH_FAKE_POP(p):
     quadruples.getOperationsStack().pop()
 
 def getAddress(name):
-    #print("name", name)
     #constantsTable.printConstantTable()
-    if (constantsTable.getConstantByName(name)):
-        address = constantsTable.getConstantByName(name)['address']
-        return address
-    elif (currentVarTable.getVariableByName(name)):
+    if (currentVarTable.getVariableByName(name)):
         address = currentVarTable.getVariableByName(name)['address']
         return address
     elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(name)):
@@ -575,10 +580,10 @@ def quadruplesProcess():
     if (resultType != None):
         result =  addressing.handleAddressing(resultType, "temporal") #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
         ###############
-        rightOperandAddress = getAddress(rightOperand)
-        leftOperandAddress = getAddress(leftOperand)
+        #rightOperandAddress = getAddress(rightOperand)
+        #leftOperandAddress = getAddress(leftOperand)
         ###############
-        quadruples.generateQuad(operation, leftOperandAddress, rightOperandAddress, result)
+        quadruples.generateQuad(operation, leftOperand, rightOperand, result)
         quadruples.getOperandsStack().push(result)
         quadruples.getTypeStack().push(resultType)
     else:
@@ -602,7 +607,7 @@ def p_QNP6_OPERATIONTYPERELOP_APPLY(p):
     '''qnp6_push_operationtypeRELOP_apply : empty'''
     if (quadruples.getOperationsStack().size() > 0):
         #("CHECK RELOP", quadruples.getOperationsStack().top())
-        if (quadruples.getOperationsStack().top() == ">" or quadruples.getOperationsStack().top() == "<" or quadruples.getOperationsStack().top() == "<>" or quadruples.getOperationsStack().top() == "<=" or quadruples.getOperationsStack().top() == ">="):
+        if (quadruples.getOperationsStack().top() == ">" or quadruples.getOperationsStack().top() == "<" or quadruples.getOperationsStack().top() == "<>" or quadruples.getOperationsStack().top() == "==" or quadruples.getOperationsStack().top() == "<=" or quadruples.getOperationsStack().top() == ">="):
             quadruplesProcess()
     
 def p_QNP7_LOGICOPERATION_APPLY(p):
@@ -636,8 +641,10 @@ def p_ASSIGMENTNP(p):
         #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)['address']
         #else:
         #    print("Semantic Error: Variable not found in local or global scopes")
-        address = getAddress(id)
-        quadruples.generateQuad(equalSymbol, result, 'empty', address) #id
+        #address = getAddress(id)
+        #addressResult = getAddress(result)
+        print("ID", id)
+        quadruples.generateQuad(equalSymbol, result, 'empty', id) #id
         
     else:
         print("Semantic Error: Type mismatch", resType, "cannot be", idType)
@@ -649,7 +656,7 @@ def p_print(p):
     if (quadruples.getOperandsStack().size() > 0):
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
-        address = getAddress(res)
+        #address = getAddress(res)
         # Get constant or local or global address
         #if (constantsTable.getConstantByName(res)):
         #    address = constantsTable.getConstantByName(res)['address']
@@ -666,8 +673,8 @@ def p_IFNP1(p):
     '''ifnp1 : empty'''
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
-    if (expType != 'boolean'):
-        print("Semantic Error: Type mismatch, not boolean")
+    if (expType != 'int'):
+        print("Semantic Error: Type mismatch, not int")
     else:
         result = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -702,7 +709,7 @@ def p_NP2_WHILE(p):
     '''npWhile2 : empty'''
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
-    if (expType != 'boolean'):
+    if (expType != 'int'):
         print("Semantic Error: Type mismatch")
     else:
         result = quadruples.getOperandsStack().top()

@@ -1,14 +1,14 @@
 currentIntGlobalAddress = 1000
 currentFloatGlobalAddress = 2000
-currentCharGlobalAddress = 300
+currentCharGlobalAddress = 3000
 
 currentIntLocalAddress = 4000
 currentFloatLocalAddress = 5000
-currentCharLocalAddress = 600
+currentCharLocalAddress = 6000
 
 currentIntTemporalAddress = 7000
 currentFloatTemporalAddress = 8000
-currentCharTemporalAddress = 900
+currentCharTemporalAddress = 9000
 
 currentIntConstAddress = 10000
 currentFloatConstAddress = 11000
