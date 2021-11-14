@@ -148,7 +148,7 @@ def p_PROGRAM3(p):
     '''program3 : functions program4'''
     
 def p_PROGRAM4(p):
-    '''program4 : MAIN npGoToMain npChangeCurrentFunctionToMain LPAREN RPAREN block npEndMain'''
+    '''program4 : MAIN npGoToMain npChangeCurrentFunctionToMain LPAREN RPAREN npCountQuadruples block npEndMain'''
 
 def p_DEC_VARS(p):
     '''decVars : VARS np3CreateVarsTable decVars2

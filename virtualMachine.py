@@ -1,4 +1,5 @@
 import pprint
+import quadruples as qp
 
 class Memory():
     def __init__(self):
@@ -57,6 +58,7 @@ class VirtualMachine():
    
         globalMemory = Memory()
         localMemory = StackSegment()
+        checkpoints = qp.Stack()
         tempMemory = Memory()
         constantsMemory = Memory()
         ip = 0
@@ -171,7 +173,17 @@ class VirtualMachine():
             if (currentQuad[0] == 'PRINT'):
                 val = getFromMemory(currentQuad[3])
                 print(val)
-
+            #if (currentQuad[0] == 'ERA'):
+            #    currentFunc = currentQuad[1]
+            if (currentQuad[0] == 'GOSUB'):
+                saveQuad = ip + 2
+                checkpoints.push(saveQuad)
+                ip = currentQuad[3] - 2
+            if (currentQuad[0] == 'ENDFUNC'):
+                if (checkpoints.size() > 0):
+                    lastIp = checkpoints.top()
+                    checkpoints.pop()
+                    ip = lastIp - 2
             ip += 1
             #print("Global Memory")
             #globalMemory.printMemory()
