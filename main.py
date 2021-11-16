@@ -52,7 +52,8 @@ tokens = ['LETTER',
           'OPERATORTYPE2',
           'LOGICOPERATOR',
           'SEMICOLON',
-          'COMMA'] + list(reserved.values())
+          'COMMA',
+          'THREEDOTS'] + list(reserved.values())
 
 # Definicion de Expresiones Regulares
 t_PROGRAM = r'program'
@@ -79,6 +80,7 @@ t_OPERATORTYPE2 = r'(\*|\/)'
 t_LOGICOPERATOR = r'(\&\&|\|\|)'
 t_SEMICOLON = r';'
 t_COMMA = r','
+t_THREEDOTS = r'(\.\.\.)'
 t_ignore = ' '
 
 def t_ctefloat(t):
@@ -127,13 +129,18 @@ currentFuncAux = None
 currentType = None
 currentVarTable = None
 currentParamTable = None
+currentArrayNodeAux = None
 globalFunctionName = None
 paramCounter = 0
 funcCalled = None
 quadruples = qp.Quadruples()
 quadruples.generateQuad('GoTo', 'empty', 'empty', None)
 constantsTable = ct.ConstantsTable()
-
+DIM = 1
+R = 1
+offset = 0
+size = 0
+K = 0
 # YACC
 def p_PROGRAM(p):
     '''program : PROGRAM ID np2CreateMainVarsTable SEMICOLON program2
@@ -159,15 +166,15 @@ def p_DEC_VARS2(p):
     
 def p_DEC_VARS3(p):
     '''decVars3 : ID np4AddCurrentTable decVars4
-                | ID np4AddCurrentTable decVars5
+                | decVarsArray
                 | ID np4AddCurrentTable decVars6'''
 
 def p_DEC_VARS4(p):
     '''decVars4 : COMMA decVars3'''
 
 def p_DEC_VARS5(p):
-    '''decVars5 : LSQUAREBRACKET cteint RSQUAREBRACKET decVars4
-                | LSQUAREBRACKET cteint RSQUAREBRACKET decVars6'''
+    '''decVarsArray : ID np4AddCurrentTable npSetAsArray LSQUAREBRACKET cteint THREEDOTS cteint npSetArrayDim RSQUAREBRACKET npArrayOffset decVars4
+                | ID np4AddCurrentTable npSetAsArray LSQUAREBRACKET cteint THREEDOTS cteint npSetArrayDim RSQUAREBRACKET  npArrayOffset decVars6'''
 
 def p_DEC_VARS6(p):
     '''decVars6 : SEMICOLON decVars2
@@ -324,7 +331,7 @@ def p_EMPTY(p):
 
 def p_TEST(p):
     '''np0Test : empty'''
-    print("BBBB")
+    print('test')
 
 def p_GOTO_MAIN(p):
     '''npGoToMain : empty'''
@@ -800,7 +807,51 @@ def p_NP4_FOR(p):
     quadruples.getOperandsStack().pop() # Remove original ID
     quadruples.getTypeStack().pop()
  
+# Neuralig points for ARRAYS
+def p_NP_SET_AS_ARRAY(p):
+    '''npSetAsArray : empty'''
+    global R
+    global DIM
+    currentVarTable.getVariableByName(p[-2])['isArray'] = True
+    R = 1
+    DIM = 1
 
+def p_NP_SET_ARRAY_DIM(p):
+    '''npSetArrayDim : empty'''
+    global currentArrayNodeAux
+    global R
+    nodeAux = vt.ArrayDimNode()
+    nodeAux.setLimInf(p[-3])
+    nodeAux.setLimSup(p[-1])
+    R = ( p[-1] - p[-3] ) * R
+    currentArrayNodeAux = nodeAux
+    currentVarTable.getVariableByName(p[-7])['dim'] = nodeAux
+
+def p_NP_ARRAY_OFFSET(p):
+    '''npArrayOffset : empty'''
+    global currentArrayNodeAux
+    global offset
+    global size
+    global R
+    global DIM
+    offset = 0
+    size = R
+    currentArrayNodeAux.setNextNode(None)
+    currentArrayNodeAux = currentVarTable.getVariableByName(p[-9])['dim']
+    while(True):
+        mDim = R / (currentArrayNodeAux.getLimSup() - currentArrayNodeAux.getLimInf() + 1)
+        currentArrayNodeAux.setM(mDim)
+        R = mDim
+        offset = offset + currentArrayNodeAux.getLimInf() * mDim
+        if (currentArrayNodeAux.getNextNode() == None):
+            break
+        else:
+            currentArrayNodeAux = currentArrayNodeAux.getNextNode()
+    K = offset
+    currentArrayNodeAux.setM(-K)
+    
+    #print("test", currentVarTable.getVariableByName(p[-9])['dim'].printNode())
+    
 def p_END_MAIN(p):
     '''npEndMain : empty'''
     quadruples.generateQuad("END", 'empty', 'empty', 'empty')

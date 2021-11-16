@@ -1,5 +1,5 @@
 program MyRlike;
-vars int: i, j, k;
+vars int: i, j, k[3...10];
     float: g;
 function void test123(int:x){
     j = 17;

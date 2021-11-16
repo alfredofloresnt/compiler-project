@@ -101,6 +101,34 @@ class DirFunc:
     def printDirFunc(self):
         pprint.pprint(self.dirFuncData)
 
+class ArrayDimNode:
+    def __init__(self):
+        self.nDim = 1
+        self.limInf = None
+        self.limSup = None
+        self.m = 0
+        self.nextNode = None
+    def setNextNode(self, node):
+        self.nextNode = node
+    def setLimInf(self, val):
+        self.limInf = val
+    def setLimSup(self, val):
+        self.limSup = val
+    def addDim(self):
+        self.nDim += 1
+    def setM(self, val):
+        self.m = val
+    def getLimInf(self):
+        return self.limInf
+    def getLimSup(self):
+        return self.limSup
+    def getNextNode(self):
+        return self.nextNode
+    def printNode(self):
+        print("Node", self.nDim, "limInf", self.limInf, "limSup", self.limSup, "nextNode", self.nextNode)
+
+
+
 #class MyFuncTables:
 
 def getFunctionByName(arr, value):
