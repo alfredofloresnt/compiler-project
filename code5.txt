@@ -1,11 +1,11 @@
 program MyRlike;
-vars int: i, j, k[3...10];
-    float: g;
-function void test123(int:x){
+vars float: i, j[3...10], k;
+float:g;
+function void test123(float:x){
     j = 17;
     print(j);
 }
-function void test(int:x){
+function void test(float:x){
     j = 10 / 3;
     print(j);
     test123(j)
@@ -14,6 +14,7 @@ function void test(int:x){
 main(){
     i = 0;
     k = 20;
+    j[4] = 10;
     test(i)
     print(k);
     

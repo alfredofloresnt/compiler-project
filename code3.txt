@@ -1,16 +1,17 @@
 program MyRlike;
-vars int: i, j, k;
-function void test345(int:m, int:c)
-vars int:n, d;
-{
-    i = j + k;
-}
-function void test123(int:m, int:c, int:l)
-vars int:n, i, d;
-{
-    print(i * k, j / j);
+vars int: i;
+
+function void tres(int:m){
+    print(m);
 }
 
+function void dos(int:k){
+    tres(k+1)
+}
+function void uno(int:j){
+    dos(j+1)
+}
 main(){
-
+    i = 25;
+    uno(i)
 }

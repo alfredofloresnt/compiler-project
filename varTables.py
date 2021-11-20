@@ -43,6 +43,13 @@ class Vars:
         if (name in self.items):
             return self.items[name]
         return None
+    def getData(self):
+        return self.items
+        #arr = []
+        #print("self", self.items)
+        #for obj in self.items:
+        #    print("obj", obj)
+        #    #arr.append({'name': obj[name]})
     def getSize(self):
         return len(self.items)
     def printVars(self):
@@ -124,6 +131,8 @@ class ArrayDimNode:
         return self.limSup
     def getNextNode(self):
         return self.nextNode
+    def getDimSize(self):
+        return self.nDim
     def printNode(self):
         print("Node", self.nDim, "limInf", self.limInf, "limSup", self.limSup, "nextNode", self.nextNode)
 

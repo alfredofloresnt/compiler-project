@@ -231,7 +231,7 @@ def p_VARIABLE(p):
                 | ID qnp1_push'''
 
 def p_VARIABLE2(p):
-    '''variable2 : LSQUAREBRACKET variable3 RSQUAREBRACKET'''
+    '''variable2 : LSQUAREBRACKET npArrayAccessPushDim variable3 npArrayAccessVerifyLimits RSQUAREBRACKET npArrayAccessGenerateQuad'''
 
 def p_VARIABLE3(p):
     '''variable3 : expression'''
@@ -257,7 +257,7 @@ def p_RETURN_FUNC(p):
     '''returnFunc : RETURN LPAREN superExpression RPAREN SEMICOLON'''
 
 def p_READ_INPUT(p):
-    '''readInput : READ LPAREN variable RPAREN SEMICOLON'''
+    '''readInput : READ LPAREN variable npRead RPAREN SEMICOLON'''
 
 
 def p_SUPER_EXPRESSION(p):
@@ -299,23 +299,22 @@ def p_TERM2(p):
 def p_FACTOR(p):
     '''factor : LPAREN npPushFakeBottom superExpression RPAREN npPopFakeBottom
               | factor2 varcte
-              | factor3
+              | ID qnp1_push factor3
               | varcte'''
 
 def p_FACTOR2(p):
     '''factor2 : OPERATORTYPE1'''
 
 def p_FACTOR3(p):
-    '''factor3 : ID LPAREN factor4
-                | ID LSQUAREBRACKET factor5'''
+    '''factor3 : LSQUAREBRACKET npArrayAccessPushDim expression npArrayAccessVerifyLimits RSQUAREBRACKET npArrayAccessGenerateQuad'''
 
-def p_FACTOR4(p):
-    '''factor4 : expression COMMA factor4
-                | expression RPAREN'''
+#def p_FACTOR4(p):
+#    '''factor4 : expression COMMA factor4
+#                | expression RPAREN'''
 
-def p_FACTOR5(p):
-    '''factor5 : expression COMMA factor5
-                | expression RSQUAREBRACKET'''
+#def p_FACTOR5(p):
+#    '''factor5 : expression COMMA factor5
+#                | expression npArrayAccessVerifyLimits RSQUAREBRACKET npArrayAccessGenerateQuad'''
 
 def p_VARCTE(p):
     '''varcte : ID qnp1_push
@@ -331,7 +330,7 @@ def p_EMPTY(p):
 
 def p_TEST(p):
     '''np0Test : empty'''
-    print('test')
+    quadruples.printStacks()
 
 def p_GOTO_MAIN(p):
     '''npGoToMain : empty'''
@@ -585,7 +584,8 @@ def quadruplesProcess():
     quadruples.getOperationsStack().pop()
     resultType = sc.getType(leftOperandType, rightOperandType, operation)
     if (resultType != None):
-        result =  addressing.handleAddressing(resultType, "temporal") #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
+        temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
+        result =  addressing.handleAddressing(resultType, temporalType) #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
         ###############
         #rightOperandAddress = getAddress(rightOperand)
         #leftOperandAddress = getAddress(leftOperand)
@@ -673,7 +673,26 @@ def p_print(p):
         #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
         quadruples.generateQuad('PRINT', 'empty', 'empty', res) #res
         quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
 
+# Neuralgic point for READ statement
+def p_READ(p):
+    '''npRead : empty'''
+    quadruples.getOperationsStack().push('print')
+    if (quadruples.getOperandsStack().size() > 0):
+        res = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        #address = getAddress(res)
+        # Get constant or local or global address
+        #if (constantsTable.getConstantByName(res)):
+        #    address = constantsTable.getConstantByName(res)['address']
+        #if (currentVarTable.getVariableByName(res)):
+        #    address = currentVarTable.getVariableByName(res)['address']
+        #elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)):
+        #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
+        quadruples.generateQuad('READ', res, 'empty', 'empty') #res
+        quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
         
 # Neuralgic point for IF statement
 def p_IFNP1(p):
@@ -834,6 +853,7 @@ def p_NP_ARRAY_OFFSET(p):
     global size
     global R
     global DIM
+    global K
     offset = 0
     size = R
     currentArrayNodeAux.setNextNode(None)
@@ -842,16 +862,62 @@ def p_NP_ARRAY_OFFSET(p):
         mDim = R / (currentArrayNodeAux.getLimSup() - currentArrayNodeAux.getLimInf() + 1)
         currentArrayNodeAux.setM(mDim)
         R = mDim
-        offset = offset + currentArrayNodeAux.getLimInf() * mDim
+        offset = int(offset + currentArrayNodeAux.getLimInf() * mDim)
         if (currentArrayNodeAux.getNextNode() == None):
             break
         else:
             currentArrayNodeAux = currentArrayNodeAux.getNextNode()
-    K = offset
-    currentArrayNodeAux.setM(-K)
-    
+    print("offset", offset)
+    K = -offset
+    currentArrayNodeAux.setM(K)
+    idType = currentVarTable.getVariableByName(p[-9])['type']
+    if (currentFunc == globalFunctionName):
+        currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "global", size)
+    else:
+        currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "local", size)
     #print("test", currentVarTable.getVariableByName(p[-9])['dim'].printNode())
+
+def p_ARRAY_ACCESS_PUSH_DIM(p):
+    '''npArrayAccessPushDim : empty'''
+    global DIM
+    global currentArrayNodeAux
+    id = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    idType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    print("currentVarTable.getVariableByName(p[-3])", currentVarTable.getVariableByName(p[-3]), p[-3], p[-2], id)
+    if ('dim' in currentVarTable.getVariableByName(p[-3])):
+        DIM = 1
+        #quadruples.getDimsStack().push(id, DIM)
+        currentArrayNodeAux = currentVarTable.getVariableByName(p[-3])['dim']
+        quadruples.getOperationsStack().push('(') # Push fake bottom. Dont need it beacause the compiler only handles one dimension
+    else:
+        print("Semantic Error: The variable" + p[-3] + "is not an array")
     
+def p_ARRAY_ACCESS_VERIFY_LIMITS(p):
+    '''npArrayAccessVerifyLimits : empty '''
+    limInf = currentArrayNodeAux.getLimInf()
+    limSup = currentArrayNodeAux.getLimSup()
+    quadruples.generateQuad('VERIFY',  quadruples.getOperandsStack().top(), limInf, limSup)
+
+def p_ARRAY_ACCESS_GENERATE_QUAD(p):
+    '''npArrayAccessGenerateQuad : empty'''
+    quadruples.printStacks()
+    aux1 = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    aux1Type = quadruples.getTypeStack().top()
+    temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
+    tempAddress =  addressing.handleAddressing(aux1Type, temporalType)
+    print('p[-7]', p[-7])
+    idAddress = currentVarTable.getVariableByName(p[-7])['address']
+    idType = currentVarTable.getVariableByName(p[-7])['type']
+    temp2Address =  addressing.handleAddressing(idType, temporalType)
+    print("aux1", aux1, K, tempAddress, idAddress, idType)
+    quadruples.generateQuad('+', aux1, K, tempAddress)
+    quadruples.generateQuad('+', tempAddress, idAddress, temp2Address)
+    quadruples.getOperandsStack().push("("+str(temp2Address)+")")
+    quadruples.getOperationsStack().pop()
+
 def p_END_MAIN(p):
     '''npEndMain : empty'''
     quadruples.generateQuad("END", 'empty', 'empty', 'empty')
@@ -861,7 +927,7 @@ parser = yacc.yacc()
 print("Yacc has been generated!")
 
 
-codeToCompile = open('code5.txt','r')
+codeToCompile = open('code3.txt','r')
 data = str(codeToCompile.read())
 lexer.input(data)
 # Debug tokens
@@ -874,10 +940,12 @@ try:
     
     parser.parse(data)
     quadruples.printQuads()
+    #quadruples.printStacks()
     #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
-    #dirFunc.getFunctionByName("dos")['table'].printVars()
+    dirFunc.getFunctionByName("MyRlike")['table'].printVars()
+    dirFunc.getFunctionByName("uno")['table'].printVars()
     #dirFunc.printDirFunc()
-    #constantsTable.printConstantTable()
+    constantsTable.printConstantTable()
     print('Code passed!')
 except Exception as e:
     traceback.print_exc()
