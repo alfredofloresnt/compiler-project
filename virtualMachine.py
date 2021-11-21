@@ -1,6 +1,8 @@
 import pprint
 import quadruples as qp
 from errorHandler import Error
+import pickle
+
 class Memory():
     def __init__(self):
         self.data = {}
@@ -49,7 +51,13 @@ class StackSegment():
 
 
 class VirtualMachine():
-    def beginMachine(self, quadruples, dirFunc, constantsTable):
+    def beginMachine(self):
+        objectCodeData = None
+        with open('object.code', 'rb') as handle:
+            objectCodeData = pickle.load(handle)
+        dirFunc = objectCodeData["dirFunc"]
+        constantsTable = objectCodeData["constantsTable"]
+        quadruples = objectCodeData["quadruples"]
         def insertInMemory(address, value):
             if (address >= 1000 and address <= 3999):
                 globalMemory.insert(address, value)

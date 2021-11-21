@@ -1083,5 +1083,15 @@ except Exception as e:
     print('Error in code!', e)
 
 
+with open('object.code', 'wb') as handle:
+    pickle.dump(
+        {
+            "quadruples": quadruples.getQuad(),
+            "dirFunc": dirFunc,
+            "constantsTable": constantsTable.getConstants()
+        },
+         handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 machine = vm.VirtualMachine()
-machine.beginMachine(quadruples.getQuad(), dirFunc, constantsTable.getConstants())
+machine.beginMachine()
