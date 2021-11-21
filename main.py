@@ -10,6 +10,7 @@ import virtualMachine as vm
 from errorHandler import Error
 import random
 import traceback
+import pickle
 # Lexer
 
 # Definicion de tokens
@@ -1025,6 +1026,7 @@ def p_ARRAY_ACCESS_VERIFY_LIMITS(p):
 
 def p_ARRAY_ACCESS_GENERATE_QUAD(p):
     '''npArrayAccessGenerateQuad : empty'''
+    global constantsTable
     aux1 = quadruples.getOperandsStack().top()
     quadruples.getOperandsStack().pop()
     aux1Type = quadruples.getTypeStack().top()
@@ -1034,8 +1036,16 @@ def p_ARRAY_ACCESS_GENERATE_QUAD(p):
     idType = currentVarTable.getVariableByName(p[-7])['type']
     temp2Address =  addressing.handleAddressing(idType, temporalType)
     print("aux1", aux1, K, tempAddress, idAddress, idType)
-    quadruples.generateQuad('+', aux1, K, tempAddress)
-    quadruples.generateQuad('+', tempAddress, idAddress, temp2Address)
+    
+
+    if (constantsTable.getConstantByName(K) == None):
+        constAddress = addressing.handleAddressing('int', 'constant')
+        constantsTable.insert(K, constAddress)
+    else:
+        constAddress = constantsTable.getConstantByName(K)["address"]
+    print("K", K, constAddress)
+    quadruples.generateQuad('+', aux1, constAddress, tempAddress)
+    quadruples.generateQuad('+', tempAddress, "*" + str(idAddress), temp2Address)
     quadruples.getOperandsStack().push("("+str(temp2Address)+")")
     quadruples.getOperationsStack().pop()
 
@@ -1073,5 +1083,5 @@ except Exception as e:
     print('Error in code!', e)
 
 
-#machine = vm.VirtualMachine()
-#machine.beginMachine(quadruples.getQuad(), dirFunc, constantsTable.getConstants())
+machine = vm.VirtualMachine()
+machine.beginMachine(quadruples.getQuad(), dirFunc, constantsTable.getConstants())

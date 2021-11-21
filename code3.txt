@@ -1,7 +1,10 @@
 program MyRlike;
-vars int:A[1...10], i, j;
+vars int:A[1...10], i;
+char:j;
 
 main(){
-
- i = A[j] + 3; 
+    j = 'h';
+    A = 123;
+    A[5] = 10;
+    print(A);
 }

@@ -1,6 +1,6 @@
 import pprint
 import quadruples as qp
-
+from errorHandler import Error
 class Memory():
     def __init__(self):
         self.data = {}
@@ -80,7 +80,33 @@ class VirtualMachine():
                 return localMemory.getPreviousState(address)
             elif (globalMemory.get(address)):
                 return globalMemory.get(address)
-        #def createConstantMemory():
+        def isAddressPointer(address):
+            if (str(address)[0] == '(' and str(address)[-1] == ')'):
+                address = int(address[1:-1])
+                return address
+            else:
+                return None
+        def notAddress(address):
+            if (str(address)[0] == '*'):
+                return int(address[1:])
+            else:
+                return None
+        def getTransformmedAddress(address, index = 0):
+            if (notAddress(address)):
+                print("ENTRA 1", address, index)
+                return notAddress(address)
+            elif (isAddressPointer(address)):
+                print("ENTRA 2", address, index)
+                pointer = isAddressPointer(address)
+                print("pointer", pointer, getFromMemory(pointer))
+                if (index == 3):
+                    return getFromMemory(pointer)
+                return getFromMemory(getFromMemory(pointer))
+            else:
+                print("ENTRA 3", address, index)
+                if (index == 3):
+                    return address
+                return getFromMemory(address)
             # Change keys to address to get quick access
             
             
@@ -103,19 +129,30 @@ class VirtualMachine():
             constantsMemory.insert(obj['address'], obj['name'])
         while(currentQuad[0] != 'END'):
             currentQuad = quadruples.get(ip)
-            #print("currentQuad", currentQuad)
+            print("currentQuad", currentQuad)
             # Big switch case
-            if (currentQuad[0] == '='):     
-                newVal = getFromMemory(currentQuad[1])
-                resDir = currentQuad[3]
+            if (currentQuad[0] == '='):
+                newVal = getTransformmedAddress(currentQuad[1])
+                resDir = getTransformmedAddress(currentQuad[3], 3)
+                #newVal = getFromMemory(currentQuad[1])
+                #resDir = isAddressPointer(currentQuad[3])
+                print("=", resDir, newVal)
                 insertInMemory(resDir, newVal)
             if (currentQuad[0] == '+'):
-                #   tempMemory.printMemory()
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
-                if (valRight == None): # Check if is an addres or a value from an array operation
-                    valRight = currentQuad[2]
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
+                #   tempMemory.printMemory()
+                #if (notAddress(currentQuad[2])):
+                #    valRight = notAddress(currentQuad[2])
+                #else:
+                #    valRight = getFromMemory(currentQuad[2])
+                #
+                #valLeft = getFromMemory(currentQuad[1])
+                #print("CVBCVBCVB", valRight)
+                #if (valRight == None): # Check if is an addres or a value from an array operation
+                #    valRight = currentQuad[2]
+                
                 print("valLeft + valRight", valLeft, valRight)
                 insertInMemory(addressTemp, valLeft + valRight)
             if (currentQuad[0] == '-'):
@@ -205,7 +242,7 @@ class VirtualMachine():
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == 'PRINT'):
                 
-                val = getFromMemory(currentQuad[3])
+                val = getFromMemory(getTransformmedAddress(currentQuad[3], 3))
                 print(val)
             if (currentQuad[0] == 'READ'):
                 varToBeAssigned = currentQuad[1]
@@ -265,7 +302,7 @@ class VirtualMachine():
             if (currentQuad[0] == 'VERIFY'):
                 val = getFromMemory(currentQuad[1])
                 if (val < currentQuad[2] or val > currentQuad[3]):
-                    print("Execution Error: out of bounds")
+                    Error("Execution Error: out of bounds")
                 
             ip += 1
         print("Global Memory")
