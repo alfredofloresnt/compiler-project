@@ -7,6 +7,7 @@ import semanticCube as sc
 import constantTable as ct
 import addressing
 import virtualMachine as vm
+from errorHandler import Error
 import random
 import traceback
 # Lexer
@@ -40,6 +41,7 @@ tokens = ['LETTER',
           'ctechar', 
           'ctestring', 
           'RELOP',
+          'RELOP2',
           'EQUAL',
           'LPAREN',
           'RPAREN', 
@@ -66,7 +68,7 @@ t_INT = r'int'
 t_FLOAT = r'float'
 t_PRINT = r'print'
 t_ctestring = r'\".*\"'
-t_RELOP = r'\<\>|\<|\>|\=\='
+t_RELOP = r'(?:<=?|>=?|==|!=)'
 t_EQUAL = r'='
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
@@ -133,6 +135,7 @@ currentArrayNodeAux = None
 globalFunctionName = None
 paramCounter = 0
 funcCalled = None
+funcCalledStack = []
 quadruples = qp.Quadruples()
 quadruples.generateQuad('GoTo', 'empty', 'empty', None)
 constantsTable = ct.ConstantsTable()
@@ -219,9 +222,10 @@ def p_STATEMENT(p):
                 | print
                 | whileLoop
                 | readInput
+                | returnFunc
                 | functionCall
                 | forLoop
-                | returnFunc'''
+                '''
 
 def p_ASSIGNATION(p):
     '''assignation : variable EQUAL qnp2_push_operations expression assigmentnp SEMICOLON'''
@@ -254,7 +258,7 @@ def p_FOR_LOOP(p):
     '''forLoop : FOR LPAREN ID np1For EQUAL exp np2For TO exp np3For RPAREN block np4For'''
 
 def p_RETURN_FUNC(p):
-    '''returnFunc : RETURN LPAREN superExpression RPAREN SEMICOLON'''
+    '''returnFunc : RETURN LPAREN superExpression npReturn RPAREN SEMICOLON'''
 
 def p_READ_INPUT(p):
     '''readInput : READ LPAREN variable npRead RPAREN SEMICOLON'''
@@ -300,6 +304,7 @@ def p_FACTOR(p):
     '''factor : LPAREN npPushFakeBottom superExpression RPAREN npPopFakeBottom
               | factor2 varcte
               | ID qnp1_push factor3
+              | functionFactor
               | varcte'''
 
 def p_FACTOR2(p):
@@ -308,6 +313,12 @@ def p_FACTOR2(p):
 def p_FACTOR3(p):
     '''factor3 : LSQUAREBRACKET npArrayAccessPushDim expression npArrayAccessVerifyLimits RSQUAREBRACKET npArrayAccessGenerateQuad'''
 
+def p_FUNCTION_FACTOR(p):
+    '''functionFactor : ID npFunctionPushFactor npVerifyFuncFactor npCreateEraFactor LPAREN functionCall2Factor RPAREN npVerifyParamsCoherencyFactor'''
+
+def p_FUNCTION_CALL2_FACTOR(p):
+    '''functionCall2Factor : superExpression npVerifyParamFactor 
+                     | superExpression npVerifyParamFactor COMMA npMoveNextParam functionCall2Factor '''
 #def p_FACTOR4(p):
 #    '''factor4 : expression COMMA factor4
 #                | expression RPAREN'''
@@ -330,7 +341,7 @@ def p_EMPTY(p):
 
 def p_TEST(p):
     '''np0Test : empty'''
-    quadruples.printStacks()
+    print("ENTRA TEST")
 
 def p_GOTO_MAIN(p):
     '''npGoToMain : empty'''
@@ -381,7 +392,7 @@ def p_NP4_ADD_CURRENT_TABLE(p):
     # Check if id-name in current VarsTable
     id = currentVarTable.getVariableByName(p[-1])
     if (id != None):
-        print("Semantic Error: Multiple variable declaration of " + p[-1])
+        Error("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
         if (currentFunc == globalFunctionName):
             currentVarTable.insert({"name": p[-1], "type": currentType, "address": addressing.handleAddressing(currentType, "global")})
@@ -396,7 +407,7 @@ def p_ADD_PARAMETERS_CURRENT_TABLE(p):
     # Check if id-name in current VarsTable
     id = currentVarTable.getVariableByName(p[-1])
     if (id != None):
-        print("Semantic Error: Multiple variable declaration of " + p[-1])
+        Error("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
         currentVarTable.insert({"name": p[-1], "type": currentType, "address": addressing.handleAddressing(currentType, "local")})
         currentParamTable.insert(currentType)
@@ -424,11 +435,12 @@ def p_END_PROC(p):
 
 def p_VERIFY_FUNCTION(p):
     '''npVerifyFunc : empty'''
-    global funcCalled
+    global funcCalledStack, funcCalled
     if (dirFunc.getFunctionByName(p[-1]) == None):
-        print("Semantic Error: Function not declared")
+        Error("Semantic Error: Function not declared")
     else:
-        funcCalled = p[-1]
+        funcCalledStack.append(p[-1])
+        funcCalled = funcCalledStack[-1]
 
 def p_CREATE_ERA(p):
     '''npCreateEra : empty'''
@@ -439,7 +451,7 @@ def p_CREATE_ERA(p):
     quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
     paramCounter = 1
     currentFuncAux = currentFunc
-    currentFunc = funcCalled
+    
     currentParamTable = dirFunc.getFunctionByName(funcCalled)["parameterTable"]
 
 def p_VERIFY_PARAM(p):
@@ -453,7 +465,7 @@ def p_VERIFY_PARAM(p):
     if (argumentType == paramTypeInTable):
         quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
     else:
-        print("Semantic Error: Wrong funtion signature", argumentType, "is not", paramTypeInTable)
+        Error("Semantic Error: Wrong funtion signature", argumentType, "is not", paramTypeInTable)
 
 def p_MOVE_NEXT_PARAM(p):
     '''npMoveNextParam : empty'''
@@ -462,11 +474,108 @@ def p_MOVE_NEXT_PARAM(p):
 
 def p_VERIFY_PARAMS_COHERENCY(p):
     '''npVerifyParamsCoherency : empty'''
+    global funcCalledStack, funcCalled
     paramTable = dirFunc.getFunctionByName(funcCalled)['parameterTable']
     if (paramTable.getParamByIndex(paramCounter) != None):
-        print("Semantic Error: Params number does not match", paramCounter, paramTable.getSize())
+        Error("Semantic Error: Params number does not match", paramCounter, paramTable.getSize())
     else:
         quadruples.generateQuad("GOSUB", funcCalled, 'empty', dirFunc.getStartAtQuad(funcCalled))
+        funcCalledType = dirFunc.getFunctionByName(funcCalled)["type"]
+        currentFunc = funcCalled
+        
+        if (funcCalledType != "void"):
+            # Not void. Save return value to temp
+            funcCalledAddres = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(funcCalled)['address']
+            temporalType = "temporalLocal" if currentFuncAux != globalFunctionName else "temporalGlobal"
+            print("funcCalledType, temporalType", funcCalledType, currentFuncAux,  globalFunctionName)
+            quadruples.generateQuad("=", funcCalledAddres, 'empty', addressing.handleAddressing(funcCalledType, temporalType))
+            quadruples.printStacks()
+        else:
+            print("es void")
+    funcCalledStack.pop()
+    if (len(funcCalledStack) > 0):
+        funcCalled = funcCalledStack[-1]
+    else:
+        funcCalled = None
+    
+
+
+########################
+def p_FUNCTION_PUSH_FACTOR(p):
+    '''npFunctionPushFactor : empty'''
+    pass
+    #funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['address']
+    #funcType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
+    #quadruples.getOperandsStack().push(funcAddress)
+    #quadruples.getTypeStack().push(funcType)
+    
+
+def p_VERIFY_FUNCTION_FACTOR(p):
+    '''npVerifyFuncFactor : empty'''
+    global funcCalledStack, funcCalled
+    if (dirFunc.getFunctionByName(p[-2]) == None):
+        Error("Semantic Error: Function not declared")
+    else:
+        funcCalledStack.append(p[-2])
+        funcCalled = funcCalledStack[-1]
+
+def p_CREATE_ERA_FACTOR(p):
+    '''npCreateEraFactor : empty'''
+    global paramCounter
+    global currentFuncAux
+    global currentFunc
+    global currentParamTable
+    quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
+    paramCounter = 1
+    currentFuncAux = currentFunc
+    
+    currentParamTable = dirFunc.getFunctionByName(funcCalled)["parameterTable"]
+
+def p_VERIFY_PARAM_FACTOR(p):
+    '''npVerifyParamFactor : empty'''
+    global paramCounter
+    argument = quadruples.getOperandsStack().top()
+    quadruples.getOperandsStack().pop()
+    argumentType = quadruples.getTypeStack().top()
+    quadruples.getTypeStack().pop()
+    paramTypeInTable = currentParamTable.getParamByIndex(paramCounter - 1)
+    if (argumentType == paramTypeInTable):
+        quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
+    else:
+        Error("Semantic Error: Wrong funtion signature", argumentType, "is not", paramTypeInTable)
+
+
+def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
+    '''npVerifyParamsCoherencyFactor : empty'''
+    global funcCalledStack, funcCalled
+    paramTable = dirFunc.getFunctionByName(funcCalled)['parameterTable']
+    if (paramTable.getParamByIndex(paramCounter) != None):
+        Error("Semantic Error: Params number does not match", paramCounter, paramTable.getSize())
+    else:
+        quadruples.generateQuad("GOSUB", funcCalled, 'empty', dirFunc.getStartAtQuad(funcCalled))
+        funcCalledType = dirFunc.getFunctionByName(funcCalled)["type"]
+        currentFunc = funcCalled
+        if (funcCalledType != "void"):
+            # Not void. Save return value to temp
+            dirFunc.getVarsTableByFunctionName(globalFunctionName).printVars()
+            funcCalledAddres = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(funcCalled)['address']
+            temporalType = "temporalLocal" if currentFuncAux != globalFunctionName else "temporalGlobal"
+            print("funcCalledType, temporalType", funcCalledType, currentFuncAux,  globalFunctionName)
+            funcTempGlobalAddress = addressing.handleAddressing(funcCalledType, temporalType)
+            quadruples.generateQuad("=", funcCalledAddres, 'empty', funcTempGlobalAddress)
+            quadruples.getOperandsStack().push(funcTempGlobalAddress)
+            quadruples.getTypeStack().push(funcCalledType)
+            quadruples.printStacks()
+        else:
+            print("es void")
+    funcCalledStack.pop()
+    if (len(funcCalledStack) > 0):
+        funcCalled = funcCalledStack[-1]
+    else:
+        funcCalled = None
+
+
+#######################
 
 def p_NP5_SET_CURRENT_TYPE(p):
     '''np5SetCurrentType : empty'''
@@ -488,7 +597,7 @@ def p_NP9_ADD_FUNCTION(p):
     # Check if id-name in dirFunc
     row = dirFunc.getFunctionByName(p[-1])
     if (row != None):
-        print("Semantic Error: Multiple function declaration of " + p[-1])
+        Error("Semantic Error: Multiple function declaration of " + p[-1])
     else:
         dirFunc.insert({"name": p[-1], "type": currentType, "table": None})
         currentFunc = p[-1]
@@ -568,7 +677,7 @@ def getAddress(name):
         address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(name)['address']
         return address
     else:
-        print("Semantic Error: Type mismatch, variable", name, "does not exist")
+        Error("Semantic Error: Type mismatch, variable " + str(name) + " does not exist")
 
 def quadruplesProcess():
     #print("ENTER PROCESS")
@@ -583,6 +692,7 @@ def quadruplesProcess():
     operation = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
     resultType = sc.getType(leftOperandType, rightOperandType, operation)
+    print("resultType", leftOperandType, rightOperandType, operation)
     if (resultType != None):
         temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
         result =  addressing.handleAddressing(resultType, temporalType) #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
@@ -614,7 +724,7 @@ def p_QNP6_OPERATIONTYPERELOP_APPLY(p):
     '''qnp6_push_operationtypeRELOP_apply : empty'''
     if (quadruples.getOperationsStack().size() > 0):
         #("CHECK RELOP", quadruples.getOperationsStack().top())
-        if (quadruples.getOperationsStack().top() == ">" or quadruples.getOperationsStack().top() == "<" or quadruples.getOperationsStack().top() == "<>" or quadruples.getOperationsStack().top() == "==" or quadruples.getOperationsStack().top() == "<=" or quadruples.getOperationsStack().top() == ">="):
+        if (quadruples.getOperationsStack().top() == ">" or quadruples.getOperationsStack().top() == "<" or quadruples.getOperationsStack().top() == "!=" or quadruples.getOperationsStack().top() == "==" or quadruples.getOperationsStack().top() == "<=" or quadruples.getOperationsStack().top() == ">="):
             quadruplesProcess()
     
 def p_QNP7_LOGICOPERATION_APPLY(p):
@@ -640,6 +750,7 @@ def p_ASSIGMENTNP(p):
     equalSymbol = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
     resIDType = sc.getType(idType, resType, '=')
+    print("resIDType", idType, resType)
     if (equalSymbol == "=" and resIDType == "valid"):
         # Get local or global address
         #if (currentVarTable.getVariableByName(id)):
@@ -650,11 +761,10 @@ def p_ASSIGMENTNP(p):
         #    print("Semantic Error: Variable not found in local or global scopes")
         #address = getAddress(id)
         #addressResult = getAddress(result)
-        print("ID", id)
         quadruples.generateQuad(equalSymbol, result, 'empty', id) #id
         
     else:
-        print("Semantic Error: Type mismatch", resType, "cannot be", idType)
+        Error("Semantic Error: Type mismatch " + str(resType) + " cannot be " + str(idType))
 
 # Neuralgic point for PRINT statement
 def p_print(p):
@@ -682,25 +792,38 @@ def p_READ(p):
     if (quadruples.getOperandsStack().size() > 0):
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
-        #address = getAddress(res)
-        # Get constant or local or global address
-        #if (constantsTable.getConstantByName(res)):
-        #    address = constantsTable.getConstantByName(res)['address']
-        #if (currentVarTable.getVariableByName(res)):
-        #    address = currentVarTable.getVariableByName(res)['address']
-        #elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)):
-        #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
         quadruples.generateQuad('READ', res, 'empty', 'empty') #res
         quadruples.getOperationsStack().pop()
         quadruples.getTypeStack().pop()
         
+# Neuralgic point for RETURN statement
+def p_RETURN(p):
+    '''npReturn : empty'''
+    quadruples.getOperationsStack().push('return')
+    if (quadruples.getOperandsStack().size() > 0):
+        funcType = dirFunc.getFunctionByName(currentFunc)["type"]
+        funcAddress = addressing.handleAddressing(funcType, "global")
+        dirFunc.getVarsTableByFunctionName(globalFunctionName).insert({"name": currentFunc, "type": funcType, "address": funcAddress})
+        res = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        resType = quadruples.getTypeStack().top()
+        quadruples.getTypeStack().pop()
+        quadruples.getOperationsStack().pop()
+        print("ASD", resType, funcType)
+        typeOper = sc.getType( funcType, resType, "=")
+        if (typeOper == "valid"):
+            quadruples.generateQuad('=', res, 'empty', funcAddress) #res
+            quadruples.generateQuad('RETURN', 'empty', 'empty', res) #res
+        else:
+            Error("Semantic Error: Type mismatch " + str(resType) + " can not be " + str(funcType))
+
 # Neuralgic point for IF statement
 def p_IFNP1(p):
     '''ifnp1 : empty'''
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (expType != 'int'):
-        print("Semantic Error: Type mismatch, not int")
+        Error("Semantic Error: Type mismatch, not int")
     else:
         result = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -736,7 +859,7 @@ def p_NP2_WHILE(p):
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (expType != 'int'):
-        print("Semantic Error: Type mismatch")
+        Error("Semantic Error: Type mismatch")
     else:
         result = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -765,19 +888,19 @@ def p_NP1_FOR(p):
         idType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
     if (idType != None):
         if (idType != 'int' and idType != 'float'):
-            print("Semantic Error: Type mismatch, variable", idType, ":", p[-1], "is not a numeric value")
+            Error("Semantic Error: Type mismatch, variable " + str(idType) +  ":" + str(p[-1]) + " is not a numeric value")
         else:
             quadruples.getOperandsStack().push(p[-1])
             quadruples.getTypeStack().push(idType)
     else:
-        print("Semantic Error: Type mismatch, variable", p[-1], "does not exist")
+        Error("Semantic Error: Type mismatch, variable " + str(p[-1]) + " does not exist")
 
 def p_NP2_FOR(p):
     '''np2For : empty'''
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (expType != "int" and expType != "float"):
-        print("Semantic Error: Type mismatch, variable", quadruples.getOperandsStack().top(), "is not a numeric value")
+        Error("Semantic Error: Type mismatch, variable " + str(quadruples.getOperandsStack().top()) + " is not a numeric value")
     else:
         exp = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -787,7 +910,7 @@ def p_NP2_FOR(p):
         if (typeRes != None):
             quadruples.generateQuad("=", exp, "empty", VControl)
         else:
-            print("Semantic Error: Type mismatch")
+            Error("Semantic Error: Type mismatch")
 
 def p_NP3_FOR(p):
     '''np3For : empty'''
@@ -807,7 +930,7 @@ def p_NP3_FOR(p):
         cont = quadruples.getQuad().size() + 1
         quadruples.getJumpsStack().push(cont - 1)
     else:
-        print("Semantic Error: Type mismatch")
+        Error("Semantic Error: Type mismatch")
 
 def p_NP4_FOR(p):
     '''np4For : empty'''
@@ -842,7 +965,7 @@ def p_NP_SET_ARRAY_DIM(p):
     nodeAux = vt.ArrayDimNode()
     nodeAux.setLimInf(p[-3])
     nodeAux.setLimSup(p[-1])
-    R = ( p[-1] - p[-3] ) * R
+    R = ( p[-1] - p[-3] + 1) * R
     currentArrayNodeAux = nodeAux
     currentVarTable.getVariableByName(p[-7])['dim'] = nodeAux
 
@@ -867,14 +990,14 @@ def p_NP_ARRAY_OFFSET(p):
             break
         else:
             currentArrayNodeAux = currentArrayNodeAux.getNextNode()
-    print("offset", offset)
+    print("offset", offset, size)
     K = -offset
     currentArrayNodeAux.setM(K)
     idType = currentVarTable.getVariableByName(p[-9])['type']
     if (currentFunc == globalFunctionName):
-        currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "global", size)
+        currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "global", size - 1) - 1
     else:
-        currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "local", size)
+        currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "local", size - 1) - 1
     #print("test", currentVarTable.getVariableByName(p[-9])['dim'].printNode())
 
 def p_ARRAY_ACCESS_PUSH_DIM(p):
@@ -892,7 +1015,7 @@ def p_ARRAY_ACCESS_PUSH_DIM(p):
         currentArrayNodeAux = currentVarTable.getVariableByName(p[-3])['dim']
         quadruples.getOperationsStack().push('(') # Push fake bottom. Dont need it beacause the compiler only handles one dimension
     else:
-        print("Semantic Error: The variable" + p[-3] + "is not an array")
+        Error("Semantic Error: The variable " + str(p[-3]) + " is not an array")
     
 def p_ARRAY_ACCESS_VERIFY_LIMITS(p):
     '''npArrayAccessVerifyLimits : empty '''
@@ -902,13 +1025,11 @@ def p_ARRAY_ACCESS_VERIFY_LIMITS(p):
 
 def p_ARRAY_ACCESS_GENERATE_QUAD(p):
     '''npArrayAccessGenerateQuad : empty'''
-    quadruples.printStacks()
     aux1 = quadruples.getOperandsStack().top()
     quadruples.getOperandsStack().pop()
     aux1Type = quadruples.getTypeStack().top()
     temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
     tempAddress =  addressing.handleAddressing(aux1Type, temporalType)
-    print('p[-7]', p[-7])
     idAddress = currentVarTable.getVariableByName(p[-7])['address']
     idType = currentVarTable.getVariableByName(p[-7])['type']
     temp2Address =  addressing.handleAddressing(idType, temporalType)
@@ -943,7 +1064,7 @@ try:
     #quadruples.printStacks()
     #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
     dirFunc.getFunctionByName("MyRlike")['table'].printVars()
-    dirFunc.getFunctionByName("uno")['table'].printVars()
+    #dirFunc.getFunctionByName("uno")['table'].printVars()
     #dirFunc.printDirFunc()
     constantsTable.printConstantTable()
     print('Code passed!')
@@ -952,5 +1073,5 @@ except Exception as e:
     print('Error in code!', e)
 
 
-machine = vm.VirtualMachine()
-machine.beginMachine(quadruples.getQuad(), dirFunc, constantsTable.getConstants())
+#machine = vm.VirtualMachine()
+#machine.beginMachine(quadruples.getQuad(), dirFunc, constantsTable.getConstants())

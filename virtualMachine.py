@@ -21,7 +21,6 @@ class StackSegment():
     def insertNewMemState(self):
         self.data.append({})
     def insertTop(self, address, val):
-        print("insertTop", address, val)
         self.data[len(self.data)-1][address] = val
     def get(self, address):
         return self.data[address]
@@ -31,7 +30,10 @@ class StackSegment():
         else:
             return None
     def getTop(self, address):
-        return self.data[len(self.data)-1][address]
+        if (address in self.data[len(self.data)-1]):
+            return self.data[len(self.data)-1][address]
+        else:
+            return None
     def setData(self, val):
         self.data = val
     def getData(self):
@@ -63,11 +65,10 @@ class VirtualMachine():
             if (address >= 1000 and address <= 3999):
                 return globalMemory.get(address)
             elif (address >= 4000 and address <= 6999):
-                print("stacks", localMemory.getData())
-                if isCall:
-                    return localMemory.getPreviousState(address)
-                else:
+                if localMemory.getTop(address):
                     return localMemory.getTop(address)
+                else:
+                    return localMemory.getPreviousState(address)
             elif (address >= 7000 and address <= 8499):
                 return tempGlobalMemory.get(address)
             elif (address >= 8500 and address <= 9999):
@@ -94,7 +95,6 @@ class VirtualMachine():
         paramsStore = []
         currentQuad = quadruples.get(ip)
         currentFunc = dirFunc.getMainName()
-        isCall = False
         #print(quadruples, dirFunc, constantsTable)
         #dirFunc.printDirFunc()
         #print(dirFunc.getMainName())
@@ -116,7 +116,7 @@ class VirtualMachine():
                 if (valRight == None): # Check if is an addres or a value from an array operation
                     valRight = currentQuad[2]
                 addressTemp = currentQuad[3]
-                print("mas", valLeft, valRight, addressTemp)
+                print("valLeft + valRight", valLeft, valRight)
                 insertInMemory(addressTemp, valLeft + valRight)
             if (currentQuad[0] == '-'):
                 valLeft = getFromMemory(currentQuad[1])
@@ -171,7 +171,7 @@ class VirtualMachine():
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
-            if (currentQuad[0] == '<>'):
+            if (currentQuad[0] == '!='):
                 valLeft = getFromMemory(currentQuad[1])
                 valRight = getFromMemory(currentQuad[2])
                 addressTemp = currentQuad[3]
@@ -204,6 +204,7 @@ class VirtualMachine():
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == 'PRINT'):
+                
                 val = getFromMemory(currentQuad[3])
                 print(val)
             if (currentQuad[0] == 'READ'):
@@ -227,9 +228,8 @@ class VirtualMachine():
             if (currentQuad[0] == 'ERA'):
                 #Validate space
                 paramsStore = []
-                isCall = True
-                print("data1", localMemory.getDataPrev())
-                localMemory.insertNewMemState()
+                #print("data1", localMemory.getDataPrev())
+                
                 for key, obj in dirFunc.getFunctionByName(currentQuad[1])['table'].getData().items():
                     paramsStore.append({'name': obj['name'], 'address': obj['address'], 'type': obj['type']})
             if (currentQuad[0] == 'PARAMETER'):
@@ -241,9 +241,22 @@ class VirtualMachine():
                 saveQuad = ip + 2
                 checkpoints.push(saveQuad)
                 currentFunc = currentQuad[1]
+                #print("RETURNDATA", dirFunc.getFunctionByName(currentFunc)['type'], dirFunc.getFunctionByName(currentFunc)['name'],  dirFunc.getMainName())
+                needReturn = True if dirFunc.getFunctionByName(currentFunc)['type'] != "void" and dirFunc.getFunctionByName(currentFunc)['name'] != dirFunc.getMainName() else False
                 ip = currentQuad[3] - 2
-                isCall = False
+                localMemory.insertNewMemState()
+            if (currentQuad[0] == 'RETURN'):
+                if (needReturn):
+                    lastIp = checkpoints.top()
+                    checkpoints.pop()
+                    ip = lastIp - 2
+                    localMemory.popStack()
+                else:
+                    print("Runtime Error: The function", currentFunc, "cant have a return")
+
             if (currentQuad[0] == 'ENDFUNC'):
+                if (needReturn):
+                    print("Runtime error: The function", currentFunc, "need to be exited by a return statement")
                 if (checkpoints.size() > 0):
                     lastIp = checkpoints.top()
                     checkpoints.pop()

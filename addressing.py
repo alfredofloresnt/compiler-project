@@ -20,6 +20,7 @@ currentCharConstAddress = 12000
 def handleAddressing(typeVar, category, add = 1):
     global currentIntGlobalAddress, currentFloatGlobalAddress, currentCharGlobalAddress, currentIntLocalAddress, currentFloatLocalAddress, currentCharLocalAddress, currentIntTemporalAddress, currentFloatTemporalAddress, currentCharTemporalAddress, currentIntConstAddress, currentFloatConstAddress, currentCharConstAddress, currentIntTemporalGlobalAddress, currentFloatTemporalGlobalAddress, currentCharTemporalGlobalAddress, currentIntTemporalLocalAddress, currentFloatTemporalLocalAddress, currentCharTemporalLocalAddress
     if (typeVar == "int" and category == "global" ):
+        print("ADDRESSING", currentIntGlobalAddress, typeVar, category)
         aux = currentIntGlobalAddress
         currentIntGlobalAddress += add
         return aux

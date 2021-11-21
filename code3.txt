@@ -1,17 +1,7 @@
 program MyRlike;
-vars int: i;
+vars int:A[1...10], i, j;
 
-function void tres(int:m){
-    print(m);
-}
-
-function void dos(int:k){
-    tres(k+1)
-}
-function void uno(int:j){
-    dos(j+1)
-}
 main(){
-    i = 25;
-    uno(i)
+
+ i = A[j] + 3; 
 }
