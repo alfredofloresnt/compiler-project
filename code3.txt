@@ -1,10 +1,20 @@
 program MyRlike;
 vars int:A[1...10], i;
-char:j;
+
+function int dos(int: j)
+{
+    print('H');
+    print(j);
+    print('H');
+    if (j <= 1){
+        return(j);
+    }
+    j = dos(j - 1) + dos(j - 2);
+    
+    return (j);
+}
 
 main(){
-    j = 'h';
-    A = 99999;
-    A[5] = 10;
-    print(A);
+    i = dos(6);
+    print(i);
 }

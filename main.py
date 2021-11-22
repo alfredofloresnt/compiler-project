@@ -245,7 +245,7 @@ def p_PRINT_ON_SCREEN(p):
     '''print : PRINT LPAREN print2'''
 
 def p_PRINT_ON_SCREEN2(p):
-    '''print2 : expression npPrint print3
+    '''print2 : expression npPrint print3  
               | ctestring npPrint print3'''
 
 def p_PRINT_ON_SCREEN3(p):
@@ -488,11 +488,8 @@ def p_VERIFY_PARAMS_COHERENCY(p):
             # Not void. Save return value to temp
             funcCalledAddres = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(funcCalled)['address']
             temporalType = "temporalLocal" if currentFuncAux != globalFunctionName else "temporalGlobal"
-            print("funcCalledType, temporalType", funcCalledType, currentFuncAux,  globalFunctionName)
             quadruples.generateQuad("=", funcCalledAddres, 'empty', addressing.handleAddressing(funcCalledType, temporalType))
-            quadruples.printStacks()
-        else:
-            print("es void")
+
     funcCalledStack.pop()
     if (len(funcCalledStack) > 0):
         funcCalled = funcCalledStack[-1]
@@ -561,14 +558,10 @@ def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
             dirFunc.getVarsTableByFunctionName(globalFunctionName).printVars()
             funcCalledAddres = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(funcCalled)['address']
             temporalType = "temporalLocal" if currentFuncAux != globalFunctionName else "temporalGlobal"
-            print("funcCalledType, temporalType", funcCalledType, currentFuncAux,  globalFunctionName)
             funcTempGlobalAddress = addressing.handleAddressing(funcCalledType, temporalType)
             quadruples.generateQuad("=", funcCalledAddres, 'empty', funcTempGlobalAddress)
             quadruples.getOperandsStack().push(funcTempGlobalAddress)
             quadruples.getTypeStack().push(funcCalledType)
-            quadruples.printStacks()
-        else:
-            print("es void")
     funcCalledStack.pop()
     if (len(funcCalledStack) > 0):
         funcCalled = funcCalledStack[-1]
@@ -693,7 +686,6 @@ def quadruplesProcess():
     operation = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
     resultType = sc.getType(leftOperandType, rightOperandType, operation)
-    print("resultType", leftOperandType, rightOperandType, operation)
     if (resultType != None):
         temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
         result =  addressing.handleAddressing(resultType, temporalType) #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
@@ -731,7 +723,6 @@ def p_QNP6_OPERATIONTYPERELOP_APPLY(p):
 def p_QNP7_LOGICOPERATION_APPLY(p):
     '''qnp7_push_logicOperation_apply : empty'''
     if (quadruples.getOperationsStack().size() > 0):
-        print("CHECK LOGIC", quadruples.getOperationsStack().top())
         if (quadruples.getOperationsStack().top() == "&&" or quadruples.getOperationsStack().top() == "||"):
             quadruplesProcess()
 
@@ -751,7 +742,6 @@ def p_ASSIGMENTNP(p):
     equalSymbol = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
     resIDType = sc.getType(idType, resType, '=')
-    print("resIDType", idType, resType)
     if (equalSymbol == "=" and resIDType == "valid"):
         # Get local or global address
         #if (currentVarTable.getVariableByName(id)):
@@ -810,7 +800,6 @@ def p_RETURN(p):
         resType = quadruples.getTypeStack().top()
         quadruples.getTypeStack().pop()
         quadruples.getOperationsStack().pop()
-        print("ASD", resType, funcType)
         typeOper = sc.getType( funcType, resType, "=")
         if (typeOper == "valid"):
             quadruples.generateQuad('=', res, 'empty', funcAddress) #res
@@ -834,7 +823,6 @@ def p_IFNP1(p):
 
 def p_IFNP2_END(p):
     '''ifnp2End : empty'''
-    print("IF END")
     end = quadruples.getJumpsStack().top()
     quadruples.getJumpsStack().pop()
     cont = quadruples.getQuad().size() + 1
@@ -991,7 +979,6 @@ def p_NP_ARRAY_OFFSET(p):
             break
         else:
             currentArrayNodeAux = currentArrayNodeAux.getNextNode()
-    print("offset", offset, size)
     K = -offset
     currentArrayNodeAux.setM(K)
     idType = currentVarTable.getVariableByName(p[-9])['type']
@@ -1009,11 +996,15 @@ def p_ARRAY_ACCESS_PUSH_DIM(p):
     quadruples.getOperandsStack().pop()
     idType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
-    print("currentVarTable.getVariableByName(p[-3])", currentVarTable.getVariableByName(p[-3]), p[-3], p[-2], id)
-    if ('dim' in currentVarTable.getVariableByName(p[-3])):
+    if (currentVarTable.getVariableByName(p[-3]) and 'dim' in currentVarTable.getVariableByName(p[-3])):
         DIM = 1
         #quadruples.getDimsStack().push(id, DIM)
         currentArrayNodeAux = currentVarTable.getVariableByName(p[-3])['dim']
+        quadruples.getOperationsStack().push('(') # Push fake bottom. Dont need it beacause the compiler only handles one dimension
+    elif(dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) and 'dim' in dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])):
+        DIM = 1
+        #quadruples.getDimsStack().push(id, DIM)
+        currentArrayNodeAux = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])['dim']
         quadruples.getOperationsStack().push('(') # Push fake bottom. Dont need it beacause the compiler only handles one dimension
     else:
         Error("Semantic Error: The variable " + str(p[-3]) + " is not an array")
@@ -1024,6 +1015,15 @@ def p_ARRAY_ACCESS_VERIFY_LIMITS(p):
     limSup = currentArrayNodeAux.getLimSup()
     quadruples.generateQuad('VERIFY',  quadruples.getOperandsStack().top(), limInf, limSup)
 
+
+def getVariableGlobalorLocal(name):
+    if (currentVarTable.getVariableByName(name)):
+        return currentVarTable.getVariableByName(name)
+    elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(name)):
+        return dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(name)
+    else:
+        Error("Semantic Error: Variable not found")
+
 def p_ARRAY_ACCESS_GENERATE_QUAD(p):
     '''npArrayAccessGenerateQuad : empty'''
     global constantsTable
@@ -1032,18 +1032,15 @@ def p_ARRAY_ACCESS_GENERATE_QUAD(p):
     aux1Type = quadruples.getTypeStack().top()
     temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
     tempAddress =  addressing.handleAddressing(aux1Type, temporalType)
-    idAddress = currentVarTable.getVariableByName(p[-7])['address']
-    idType = currentVarTable.getVariableByName(p[-7])['type']
+    idAddress = getVariableGlobalorLocal(p[-7])['address']
+    idType = getVariableGlobalorLocal(p[-7])['type']
     temp2Address =  addressing.handleAddressing(idType, temporalType)
-    print("aux1", aux1, K, tempAddress, idAddress, idType)
     
-
     if (constantsTable.getConstantByName(K) == None):
         constAddress = addressing.handleAddressing('int', 'constant')
         constantsTable.insert(K, constAddress)
     else:
         constAddress = constantsTable.getConstantByName(K)["address"]
-    print("K", K, constAddress)
     quadruples.generateQuad('+', aux1, constAddress, tempAddress)
     quadruples.generateQuad('+', tempAddress, "*" + str(idAddress), temp2Address)
     quadruples.getOperandsStack().push("("+str(temp2Address)+")")

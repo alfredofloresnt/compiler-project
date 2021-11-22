@@ -80,6 +80,7 @@ class VirtualMachine():
             elif (address >= 7000 and address <= 8499):
                 return tempGlobalMemory.get(address)
             elif (address >= 8500 and address <= 9999):
+                print("Es local temp", address)
                 return tempLocalMemory.get(address)
             elif (address >= 10000 and address <= 12999):
                 return constantsMemory.get(address)
@@ -101,17 +102,17 @@ class VirtualMachine():
                 return None
         def getTransformmedAddress(address, index = 0):
             if (notAddress(address)):
-                print("ENTRA 1", address, index)
+                #print("ENTRA 1", address, index)
                 return notAddress(address)
             elif (isAddressPointer(address)):
-                print("ENTRA 2", address, index)
+                #print("ENTRA 2", address, index)
                 pointer = isAddressPointer(address)
-                print("pointer", pointer, getFromMemory(pointer))
+                #print("pointer", pointer, getFromMemory(pointer))
                 if (index == 3):
                     return getFromMemory(pointer)
                 return getFromMemory(getFromMemory(pointer))
             else:
-                print("ENTRA 3", address, index)
+                #print("ENTRA 3", address, index)
                 if (index == 3):
                     return address
                 return getFromMemory(address)
@@ -137,14 +138,14 @@ class VirtualMachine():
             constantsMemory.insert(obj['address'], obj['name'])
         while(currentQuad[0] != 'END'):
             currentQuad = quadruples.get(ip)
-            print("currentQuad", currentQuad)
+            #print("currentQuad", currentQuad)
             # Big switch case
             if (currentQuad[0] == '='):
                 newVal = getTransformmedAddress(currentQuad[1])
                 resDir = getTransformmedAddress(currentQuad[3], 3)
                 #newVal = getFromMemory(currentQuad[1])
                 #resDir = isAddressPointer(currentQuad[3])
-                print("=", resDir, newVal)
+                #print("=", resDir, newVal)
                 insertInMemory(resDir, newVal)
             if (currentQuad[0] == '+'):
                 valLeft = getTransformmedAddress(currentQuad[1])
