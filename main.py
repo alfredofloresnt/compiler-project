@@ -92,7 +92,7 @@ t_THREEDOTS = r'(\.\.\.)'
 t_ignore = ' '
 
 def t_ctefloat(t):
-    r'([0-9]+[.])[0-9]+'
+    r'[-+]?([0-9]+[.])[0-9]+'
     t.value = float(t.value)
     return t
 
