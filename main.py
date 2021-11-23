@@ -30,7 +30,11 @@ reserved = {
     'void': 'VOID',
     'read': 'READ',
     'function': 'FUNCTION',
-    'return': 'RETURN'
+    'return': 'RETURN',
+    'avg': 'AVG',
+    'reverse': 'REVERSE',
+    'find': 'FIND',
+    'mode': 'MODE',
 }
 
 tokens = ['LETTER', 
@@ -140,6 +144,8 @@ funcCalledStack = []
 quadruples = qp.Quadruples()
 quadruples.generateQuad('GoTo', 'empty', 'empty', None)
 constantsTable = ct.ConstantsTable()
+VControl = None
+expType = None
 DIM = 1
 R = 1
 offset = 0
@@ -501,11 +507,12 @@ def p_VERIFY_PARAMS_COHERENCY(p):
 ########################
 def p_FUNCTION_PUSH_FACTOR(p):
     '''npFunctionPushFactor : empty'''
-    pass
-    #funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['address']
-    #funcType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
-    #quadruples.getOperandsStack().push(funcAddress)
-    #quadruples.getTypeStack().push(funcType)
+    
+    funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['address']
+    funcType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
+    quadruples.getOperandsStack().push(funcAddress)
+    quadruples.getTypeStack().push(funcType)
+    #quadruples.getOperationsStack().push("(")
     
 
 def p_VERIFY_FUNCTION_FACTOR(p):
@@ -523,6 +530,7 @@ def p_CREATE_ERA_FACTOR(p):
     global currentFuncAux
     global currentFunc
     global currentParamTable
+    print("AQUI ENTRA", currentFunc, funcCalled)
     quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
     paramCounter = 1
     currentFuncAux = currentFunc
@@ -532,7 +540,11 @@ def p_CREATE_ERA_FACTOR(p):
 def p_VERIFY_PARAM_FACTOR(p):
     '''npVerifyParamFactor : empty'''
     global paramCounter
+    print("==========")
+    quadruples.printStacks()
+    print("==========")
     argument = quadruples.getOperandsStack().top()
+    print("El argumento es ", argument)
     quadruples.getOperandsStack().pop()
     argumentType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
@@ -560,6 +572,8 @@ def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
             temporalType = "temporalLocal" if currentFuncAux != globalFunctionName else "temporalGlobal"
             funcTempGlobalAddress = addressing.handleAddressing(funcCalledType, temporalType)
             quadruples.generateQuad("=", funcCalledAddres, 'empty', funcTempGlobalAddress)
+            quadruples.getOperandsStack().pop()
+            quadruples.getTypeStack().pop()
             quadruples.getOperandsStack().push(funcTempGlobalAddress)
             quadruples.getTypeStack().push(funcCalledType)
     funcCalledStack.pop()
@@ -741,6 +755,7 @@ def p_ASSIGMENTNP(p):
     quadruples.getOperandsStack().pop()
     equalSymbol = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
+    print("ASSIGMENT", idType, resType, equalSymbol)
     resIDType = sc.getType(idType, resType, '=')
     if (equalSymbol == "=" and resIDType == "valid"):
         # Get local or global address
@@ -793,7 +808,11 @@ def p_RETURN(p):
     quadruples.getOperationsStack().push('return')
     if (quadruples.getOperandsStack().size() > 0):
         funcType = dirFunc.getFunctionByName(currentFunc)["type"]
-        funcAddress = addressing.handleAddressing(funcType, "global")
+        if (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(currentFunc)):
+            funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(currentFunc)["address"]
+        else:
+            funcAddress = addressing.handleAddressing(funcType, "global")
+        print("funcAddress", funcAddress)
         dirFunc.getVarsTableByFunctionName(globalFunctionName).insert({"name": currentFunc, "type": funcType, "address": funcAddress})
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -872,20 +891,24 @@ def p_NP1_FOR(p):
     idType = None
     # Check if variable exist in local function if not checks global
     if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])):
+        idAddress = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])['address']
         idType = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-1])['type']
     elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1]) != None):
+        idAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['address']
         idType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
     if (idType != None):
         if (idType != 'int' and idType != 'float'):
             Error("Semantic Error: Type mismatch, variable " + str(idType) +  ":" + str(p[-1]) + " is not a numeric value")
         else:
-            quadruples.getOperandsStack().push(p[-1])
+            quadruples.getOperandsStack().push(idAddress)
             quadruples.getTypeStack().push(idType)
     else:
         Error("Semantic Error: Type mismatch, variable " + str(p[-1]) + " does not exist")
 
 def p_NP2_FOR(p):
     '''np2For : empty'''
+    global VControl
+    VControl = None
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (expType != "int" and expType != "float"):
@@ -903,11 +926,21 @@ def p_NP2_FOR(p):
 
 def p_NP3_FOR(p):
     '''np3For : empty'''
+    global VControl
+    global expType
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
-    VControl = "VControl" # Pending variable. Where is going to be stored?
-    VFinal = "VFinal" # Pending variable. Where is going to be stored?
-    tx = "tx" # Pending variable. Where is going to be stored?
+    if (currentFunc == globalFunctionName):
+        VControl = addressing.handleAddressing(expType, "temporalGlobal", 1)
+        VFinal = addressing.handleAddressing(expType, "temporalGlobal", 1)
+        tx = addressing.handleAddressing(expType, "temporalGlobal", 1)
+    else:
+        VControl = addressing.handleAddressing(expType, "temporalLocal", 1)
+        VFinal = addressing.handleAddressing(expType, "temporalLocal", 1)
+        tx = addressing.handleAddressing(expType, "temporalLocal", 1)
+    #VControl = "VControl" # Pending variable. Where is going to be stored?
+    #VFinal = "VFinal" # Pending variable. Where is going to be stored?
+    #tx = "tx" # Pending variable. Where is going to be stored?
     if (expType == "int" or expType == "float"):
         exp = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -923,8 +956,13 @@ def p_NP3_FOR(p):
 
 def p_NP4_FOR(p):
     '''np4For : empty'''
-    VControl = "VControl"
-    ty = "ty"
+    global expType
+    global VControl
+    if (currentFunc == globalFunctionName):
+        ty = addressing.handleAddressing(expType, "temporalGlobal", 1)
+    else:
+        ty = addressing.handleAddressing(expType, "temporalLocal", 1)
+
     quadruples.generateQuad("+", VControl, 1, ty)
     quadruples.generateQuad("=", ty, "empty", VControl)
     quadruples.generateQuad("=", ty, "empty", quadruples.getOperandsStack().top()) # Original ID
@@ -1059,11 +1097,11 @@ codeToCompile = open('code3.txt','r')
 data = str(codeToCompile.read())
 lexer.input(data)
 # Debug tokens
-#while True:
-#    tok = lexer.token()
-#    if not tok: 
-#        break # No more input
-#    print(tok)
+while True:
+    tok = lexer.token()
+    if not tok: 
+        break # No more input
+    print(tok)
 try:
     
     parser.parse(data)
@@ -1071,7 +1109,7 @@ try:
     #quadruples.printStacks()
     #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
     dirFunc.getFunctionByName("MyRlike")['table'].printVars()
-    #dirFunc.getFunctionByName("uno")['table'].printVars()
+    #dirFunc.getFunctionByName("dos")['table'].printVars()
     #dirFunc.printDirFunc()
     constantsTable.printConstantTable()
     print('Code passed!')

@@ -20,10 +20,14 @@ class Memory():
 class StackSegment():
     def __init__(self):
         self.data = [{}]
+        self.tempLocalMemory = [{}] 
     def insertNewMemState(self):
         self.data.append({})
+        self.tempLocalMemory.append({})
     def insertTop(self, address, val):
         self.data[len(self.data)-1][address] = val
+    def insertTopTemp(self, address, val):
+        self.tempLocalMemory[len(self.tempLocalMemory)-1][address] = val
     def get(self, address):
         return self.data[address]
     def getPreviousState(self, address):
@@ -31,19 +35,35 @@ class StackSegment():
             return self.data[len(self.data)-2][address]
         else:
             return None
+    def getPreviousStateTemp(self, address):
+        if (address in self.tempLocalMemory[len(self.tempLocalMemory)-2]):
+            return self.tempLocalMemory[len(self.tempLocalMemory)-2][address]
+        else:
+            return None
     def getTop(self, address):
         if (address in self.data[len(self.data)-1]):
             return self.data[len(self.data)-1][address]
         else:
             return None
+    def getTopTemp(self, address):
+        #print("tempLocalMemory", self.tempLocalMemory, address in self.tempLocalMemory[len(self.tempLocalMemory)-1])
+        if (address in self.tempLocalMemory[len(self.tempLocalMemory)-1]):
+            #print("777")
+            return self.tempLocalMemory[len(self.tempLocalMemory)-1][address]
+        else:
+            #print("8888", self.tempLocalMemory[len(self.tempLocalMemory)-1])
+            return None
     def setData(self, val):
         self.data = val
     def getData(self):
         return self.data
+    def getTempLocalMem(self):
+        return self.tempLocalMemory
     def getDataPrev(self):
         return self.data[len(self.data)-2]
     def popStack(self):
         self.data.pop()
+        self.tempLocalMemory.pop()
     def printMemory(self):
         for x in self.data:
             pprint.pprint(x)
@@ -66,22 +86,28 @@ class VirtualMachine():
             elif (address >= 7000 and address <= 8499):
                 tempGlobalMemory.insert(address, value)
             elif (address >= 8500 and address <= 9999):
-                tempLocalMemory.insert(address, value)
+                localMemory.insertTopTemp(address, value)
             elif (address >= 10000 and address <= 12999):
                 constantsMemory.insert(address, value)
         def getFromMemory(address):
             if (address >= 1000 and address <= 3999):
                 return globalMemory.get(address)
             elif (address >= 4000 and address <= 6999):
-                if localMemory.getTop(address):
+                if localMemory.getTop(address) != None:
                     return localMemory.getTop(address)
                 else:
+                    #Error("No se encontro dir" + str(address))
                     return localMemory.getPreviousState(address)
             elif (address >= 7000 and address <= 8499):
                 return tempGlobalMemory.get(address)
             elif (address >= 8500 and address <= 9999):
-                print("Es local temp", address)
-                return tempLocalMemory.get(address)
+                if localMemory.getTopTemp(address) != None:
+                    #print("Si encontro", address)
+                    return localMemory.getTopTemp(address)
+                else:
+                    #Error("No encontro", address)
+                    #print("No encontro", address, localMemory.getTopTemp(address))
+                    return localMemory.getPreviousStateTemp(address)
             elif (address >= 10000 and address <= 12999):
                 return constantsMemory.get(address)
         def getLocalOrGlobal(address):
@@ -139,6 +165,9 @@ class VirtualMachine():
         while(currentQuad[0] != 'END'):
             currentQuad = quadruples.get(ip)
             #print("currentQuad", currentQuad)
+            #print("localVars", localMemory.getData())
+            #print("localTemp", localMemory.getTempLocalMem())
+            #print(globalMemory.getData())
             # Big switch case
             if (currentQuad[0] == '='):
                 newVal = getTransformmedAddress(currentQuad[1])
@@ -162,7 +191,7 @@ class VirtualMachine():
                 #if (valRight == None): # Check if is an addres or a value from an array operation
                 #    valRight = currentQuad[2]
                 
-                print("valLeft + valRight", valLeft, valRight)
+                #print("valLeft + valRight", valLeft, valRight)
                 insertInMemory(addressTemp, valLeft + valRight)
             if (currentQuad[0] == '-'):
                 valLeft = getFromMemory(currentQuad[1])
@@ -275,7 +304,7 @@ class VirtualMachine():
                 #Validate space
                 paramsStore = []
                 #print("data1", localMemory.getDataPrev())
-                
+                localMemory.insertNewMemState()
                 for key, obj in dirFunc.getFunctionByName(currentQuad[1])['table'].getData().items():
                     paramsStore.append({'name': obj['name'], 'address': obj['address'], 'type': obj['type']})
             if (currentQuad[0] == 'PARAMETER'):
@@ -290,9 +319,11 @@ class VirtualMachine():
                 #print("RETURNDATA", dirFunc.getFunctionByName(currentFunc)['type'], dirFunc.getFunctionByName(currentFunc)['name'],  dirFunc.getMainName())
                 needReturn = True if dirFunc.getFunctionByName(currentFunc)['type'] != "void" and dirFunc.getFunctionByName(currentFunc)['name'] != dirFunc.getMainName() else False
                 ip = currentQuad[3] - 2
-                localMemory.insertNewMemState()
+                #localMemory.insertNewMemState()
             if (currentQuad[0] == 'RETURN'):
+                print("ENTRAAAAA")
                 if (needReturn):
+                    print("globalMemory", globalMemory.getData())
                     lastIp = checkpoints.top()
                     checkpoints.pop()
                     ip = lastIp - 2
