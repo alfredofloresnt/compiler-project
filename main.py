@@ -390,7 +390,6 @@ def p_CHANGE_CURRENT_FUNCTION_TO_MAIN(p):
     global currentFunc
     global currentVarTable
     global currentParamTable
-    #print("globalFunctionName", currentFunc, globalFunctionName)
     currentFunc = globalFunctionName
     currentVarTable = dirFunc.getFunctionByName(globalFunctionName)["table"]
     currentParamTable = dirFunc.getFunctionByName(globalFunctionName)["parameterTable"]
@@ -547,7 +546,6 @@ def p_CREATE_ERA_FACTOR(p):
     global currentFuncAux
     global currentFunc
     global currentParamTable
-    print("AQUI ENTRA", currentFunc, funcCalled)
     quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
     paramCounter = 1
     currentFuncAux = currentFunc
@@ -557,11 +555,7 @@ def p_CREATE_ERA_FACTOR(p):
 def p_VERIFY_PARAM_FACTOR(p):
     '''npVerifyParamFactor : empty'''
     global paramCounter
-    print("==========")
-    quadruples.printStacks()
-    print("==========")
     argument = quadruples.getOperandsStack().top()
-    print("El argumento es ", argument)
     quadruples.getOperandsStack().pop()
     argumentType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
@@ -584,7 +578,6 @@ def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
         currentFunc = funcCalled
         if (funcCalledType != "void"):
             # Not void. Save return value to temp
-            dirFunc.getVarsTableByFunctionName(globalFunctionName).printVars()
             funcCalledAddres = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(funcCalled)['address']
             temporalType = "temporalLocal" if currentFuncAux != globalFunctionName else "temporalGlobal"
             funcTempGlobalAddress = addressing.handleAddressing(funcCalledType, temporalType)
@@ -634,7 +627,7 @@ def p_NP12_DELETE_CURRENT_VARS_TABLE(p):
 
 
 def p_error(t):
-    print("Error (Syntax):", t.lexer.token(), t.value)
+    Error("Error (Syntax):" + str(t.lexer.token()) + str(t.value))
     raise Exception("Syntax error")
 
 # Quadruples Neuralgic points 
@@ -662,7 +655,6 @@ def p_ADD_CTECHAR(p):
     quadruples.getTypeStack().push('char')
     if (constantsTable.getConstantByName(p[-1]) == None):
         constantsTable.insert(p[-1], addressing.handleAddressing('char', 'constant'))
-    constantsTable.printConstantTable()
     addressCHAR = constantsTable.getConstantByName(p[-1])['address']
     quadruples.getOperandsStack().push(addressCHAR)
     #quadruples.getOperandsStack().push(p[-1]) # Add variable name (NOT ADDRESS) in quadruple
@@ -678,7 +670,7 @@ def p_QNP1_PUSH(p):
     elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1]) != None):
         quadruples.getTypeStack().push(dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])["type"])
     else:
-        print("Semantic Error: Variable not declared", p[-1])
+        Error("Semantic Error: Variable not declared", p[-1])
 
 def p_QNP2_PUSH_OPERATIONS(p):
     '''qnp2_push_operations : empty'''
@@ -694,7 +686,6 @@ def p_PUSH_FAKE_POP(p):
     quadruples.getOperationsStack().pop()
 
 def getAddress(name):
-    #constantsTable.printConstantTable()
     if (currentVarTable.getVariableByName(name)):
         address = currentVarTable.getVariableByName(name)['address']
         return address
@@ -705,7 +696,6 @@ def getAddress(name):
         Error("Semantic Error: Type mismatch, variable " + str(name) + " does not exist")
 
 def quadruplesProcess():
-    #print("ENTER PROCESS")
     rightOperand = quadruples.getOperandsStack().top()
     quadruples.getOperandsStack().pop()
     rightOperandType = quadruples.getTypeStack().top()
@@ -719,11 +709,7 @@ def quadruplesProcess():
     resultType = sc.getType(leftOperandType, rightOperandType, operation)
     if (resultType != None):
         temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
-        result =  addressing.handleAddressing(resultType, temporalType) #random.randint(0, 999) # This line has to be modified in the future. Addressing needs to be implemented
-        ###############
-        #rightOperandAddress = getAddress(rightOperand)
-        #leftOperandAddress = getAddress(leftOperand)
-        ###############
+        result =  addressing.handleAddressing(resultType, temporalType)
         quadruples.generateQuad(operation, leftOperand, rightOperand, result)
         quadruples.getOperandsStack().push(result)
         quadruples.getTypeStack().push(resultType)
@@ -772,20 +758,9 @@ def p_ASSIGMENTNP(p):
     quadruples.getOperandsStack().pop()
     equalSymbol = quadruples.getOperationsStack().top()
     quadruples.getOperationsStack().pop()
-    print("ASSIGMENT", idType, resType, equalSymbol)
     resIDType = sc.getType(idType, resType, '=')
     if (equalSymbol == "=" and resIDType == "valid"):
-        # Get local or global address
-        #if (currentVarTable.getVariableByName(id)):
-        #    address = currentVarTable.getVariableByName(id)['address']
-        #elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)):
-        #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(id)['address']
-        #else:
-        #    print("Semantic Error: Variable not found in local or global scopes")
-        #address = getAddress(id)
-        #addressResult = getAddress(result)
         quadruples.generateQuad(equalSymbol, result, 'empty', id) #id
-        
     else:
         Error("Semantic Error: Type mismatch " + str(resType) + " cannot be " + str(idType))
 
@@ -896,7 +871,6 @@ def p_RETURN(p):
             funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(currentFunc)["address"]
         else:
             funcAddress = addressing.handleAddressing(funcType, "global")
-        print("funcAddress", funcAddress)
         dirFunc.getVarsTableByFunctionName(globalFunctionName).insert({"name": currentFunc, "type": funcType, "address": funcAddress})
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
@@ -1108,7 +1082,6 @@ def p_NP_ARRAY_OFFSET(p):
         currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "global", size - 1) - 1
     else:
         currentVarTable.getVariableByName(p[-9])['address'] = addressing.handleAddressing(idType, "local", size - 1) - 1
-    #print("test", currentVarTable.getVariableByName(p[-9])['dim'].printNode())
 
 def p_ARRAY_ACCESS_PUSH_DIM(p):
     '''npArrayAccessPushDim : empty'''
@@ -1181,21 +1154,21 @@ codeToCompile = open('code3.txt','r')
 data = str(codeToCompile.read())
 lexer.input(data)
 # Debug tokens
-while True:
-    tok = lexer.token()
-    if not tok: 
-        break # No more input
-    print(tok)
+#while True:
+#    tok = lexer.token()
+#    if not tok: 
+#        break # No more input
+#    print(tok)
 try:
     
     parser.parse(data)
-    quadruples.printQuads()
+    #quadruples.printQuads()
     #quadruples.printStacks()
     #dirFunc.getFunctionByName("test123")['parameterTable'].printParams()
-    dirFunc.getFunctionByName("MyRlike")['table'].printVars()
+    #dirFunc.getFunctionByName("MyRlike")['table'].printVars()
     #dirFunc.getFunctionByName("dos")['table'].printVars()
     #dirFunc.printDirFunc()
-    constantsTable.printConstantTable()
+    #constantsTable.printConstantTable()
     print('Code passed!')
 except Exception as e:
     traceback.print_exc()

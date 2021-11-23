@@ -1,13 +1,13 @@
 program MyRlike;
-vars int:i[1...10];
-
+vars int:i;
+function int fibonacci(int:j){
+    if (j <= 1){
+        return (j);
+    }
+    return((fibonacci(j - 1) + (fibonacci(j - 2))));
+}
 main(){
-    i[3] = 9;
-    i[4] = 10;
-    i[5] = 5;
-    i[6] = 3;
-    i[7] = 4;
-    i[8] = 15;
-    plotXY(i);
+    i = 10;
+    i = fibonacci(i);
     print(i);
 }
