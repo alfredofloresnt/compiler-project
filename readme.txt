@@ -1,15 +1,6 @@
 Done
 ======
-Creacion de memoria virtual
-constantes y variables a direcciones
-Maquina virtual: Ejecucion operaciones aritemeticas
-Maquina virtual: Ejecucion estatutos lineales
-Maquina virtual: Ejecucion estatutos no lineales
-Creacion declaracion de arreglos
-
-todo
-======
-Acceso a arrreglos (generacion de cuadruplos)
-Modulos: retornos
-Modulos: recusividad
-Funciones especiales
+Se terminaron los mudlos en ejecucion
+Se agregaron las funciones especiales
+Se termino la generacion de cuadruplos para arreglos
+Se termino con la ejecucion de arreglos

@@ -7,7 +7,6 @@ function int fibonacci(int:j){
     return((fibonacci(j - 1) + (fibonacci(j - 2))));
 }
 main(){
-    i = 10;
-    i = fibonacci(i);
+    i = -10 + -5;
     print(i);
 }
