@@ -35,6 +35,7 @@ reserved = {
     'reverse': 'REVERSE',
     'find': 'FIND',
     'mode': 'MODE',
+    'plotXY': 'PLOT'
 }
 
 tokens = ['LETTER', 
@@ -232,6 +233,10 @@ def p_STATEMENT(p):
                 | returnFunc
                 | functionCall
                 | forLoop
+                | find
+                | avg
+                | mode
+                | plot
                 '''
 
 def p_ASSIGNATION(p):
@@ -257,6 +262,18 @@ def p_PRINT_ON_SCREEN2(p):
 def p_PRINT_ON_SCREEN3(p):
     '''print3 : COMMA print2
               | RPAREN SEMICOLON'''
+
+def p_FIND(p):
+    '''find : FIND LPAREN expression COMMA ID qnp1_push RPAREN npFind SEMICOLON'''
+
+def p_AVG(p):
+    '''avg : AVG LPAREN ID qnp1_push RPAREN npAvg SEMICOLON'''
+
+def p_MODE(p):
+    '''mode : MODE LPAREN ID qnp1_push RPAREN npMode SEMICOLON'''
+
+def p_plot(p):
+    '''plot : PLOT LPAREN ID qnp1_push RPAREN npPlot SEMICOLON'''
 
 def p_WHILE_LOOP(p):
     '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
@@ -779,15 +796,82 @@ def p_print(p):
     if (quadruples.getOperandsStack().size() > 0):
         res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
-        #address = getAddress(res)
-        # Get constant or local or global address
-        #if (constantsTable.getConstantByName(res)):
-        #    address = constantsTable.getConstantByName(res)['address']
-        #if (currentVarTable.getVariableByName(res)):
-        #    address = currentVarTable.getVariableByName(res)['address']
-        #elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)):
-        #    address = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(res)['address']
         quadruples.generateQuad('PRINT', 'empty', 'empty', res) #res
+        quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
+
+# Neuralgic point for FIND statement
+def p_NPFIND(p):
+    '''npFind : empty'''
+    quadruples.getOperationsStack().push('find')
+    if (quadruples.getOperandsStack().size() > 0):
+
+        array = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.getTypeStack().pop()
+        valToFind = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.getTypeStack().pop()
+        totDim = 0
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])):
+            firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) != None):
+            firstNode = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        quadruples.generateQuad('FIND', valToFind, totDim, array) #res
+        quadruples.getOperationsStack().pop()
+
+# Neuralgic point for FIND statement        
+def p_NPAVG(p):
+    '''npAvg : empty'''
+    quadruples.getOperationsStack().push('avg')
+    if (quadruples.getOperandsStack().size() > 0):
+        res = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        totDim = 0
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])):
+            firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) != None):
+            firstNode = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        quadruples.generateQuad('AVG', 'empty', totDim, res) #res
+        quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
+
+# Neuralgic point for MODE statement        
+def p_NPMODE(p):
+    '''npMode : empty'''
+    quadruples.getOperationsStack().push('mode')
+    if (quadruples.getOperandsStack().size() > 0):
+        res = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        totDim = 0
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])):
+            firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) != None):
+            firstNode = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        quadruples.generateQuad('MODE', 'empty', totDim, res) #res
+        quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
+
+def p_NPPLOT(p):
+    '''npPlot : empty'''
+    quadruples.getOperationsStack().push('plot')
+    if (quadruples.getOperandsStack().size() > 0):
+        res = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        totDim = 0
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])):
+            firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) != None):
+            firstNode = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        quadruples.generateQuad('PLOT', 'empty', totDim, res) #res
         quadruples.getOperationsStack().pop()
         quadruples.getTypeStack().pop()
 

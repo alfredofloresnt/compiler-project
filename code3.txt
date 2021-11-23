@@ -1,17 +1,13 @@
 program MyRlike;
-vars int:i, j;
-
-function int dos(int: j)
-{
-    if (j <= 1){
-        return(j);
-    }
-    
-    return(dos(j - 1) + (dos(j - 2)));
-}
+vars int:i[1...10];
 
 main(){
-    i = 9;
-    i = dos(i);
+    i[3] = 9;
+    i[4] = 10;
+    i[5] = 5;
+    i[6] = 3;
+    i[7] = 4;
+    i[8] = 15;
+    plotXY(i);
     print(i);
 }

@@ -2,6 +2,8 @@ import pprint
 import quadruples as qp
 from errorHandler import Error
 import pickle
+import statistics
+import matplotlib.pyplot as plt
 
 class Memory():
     def __init__(self):
@@ -343,7 +345,55 @@ class VirtualMachine():
                 val = getFromMemory(currentQuad[1])
                 if (val < currentQuad[2] or val > currentQuad[3]):
                     Error("Execution Error: out of bounds")
-                
+            if (currentQuad[0] == 'FIND'):
+                valToFind = getTransformmedAddress(currentQuad[1])
+                startAtAddress = currentQuad[3]
+                arrayIndexes = []
+                flag = False
+                for i in range(currentQuad[2]):
+                    try:
+                        address = startAtAddress + i
+                        if (getTransformmedAddress(address) == valToFind):
+                            flag = True
+                            print("Value found")
+                    except:
+                        pass
+                if (not flag):
+                    print("Value not in array")
+            if (currentQuad[0] == 'AVG'):
+                startAtAddress = currentQuad[3]
+                arrayIndexes = []
+                for i in range(currentQuad[2]):
+                    try:
+                        address = startAtAddress + i
+                        val = getTransformmedAddress(address) 
+                        arrayIndexes.append(val)
+                    except:
+                        pass
+                print("The average is:", statistics.mean(arrayIndexes))
+            if (currentQuad[0] == 'MODE'):
+                startAtAddress = currentQuad[3]
+                arrayIndexes = []
+                for i in range(currentQuad[2]):
+                    try:
+                        address = startAtAddress + i
+                        val = getTransformmedAddress(address) 
+                        arrayIndexes.append(val)
+                    except:
+                        pass
+                print("The mode is:", statistics.mode(arrayIndexes))
+            if (currentQuad[0] == 'PLOT'):
+                startAtAddress = currentQuad[3]
+                arrayIndexes = []
+                for i in range(currentQuad[2]):
+                    try:
+                        address = startAtAddress + i
+                        val = getTransformmedAddress(address) 
+                        arrayIndexes.append(val)
+                    except:
+                        pass
+                plt.plot(arrayIndexes)
+                plt.show()
             ip += 1
         print("Global Memory")
         globalMemory.printMemory()
