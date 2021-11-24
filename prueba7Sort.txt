@@ -1,0 +1,10 @@
+program MyRlike;
+vars int:j[2...5];
+
+main(){
+    j[2] = 456;
+    j[3] = 563;
+    j[4] = 785;
+    j[5] = 725;
+    sortArray(j);
+}

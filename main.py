@@ -41,7 +41,7 @@ reserved = {
     'find': 'FIND',
     'mode': 'MODE',
     'plotXY': 'PLOT',
-    'sumArrays': "SUMARRAYS"
+    'sortArray': "SORTARRAY"
 }
 
 tokens = ['LETTER', 
@@ -243,7 +243,7 @@ def p_STATEMENT(p):
                 | avg
                 | mode
                 | plot
-                | sumArrays
+                | sortArray
                 '''
 
 def p_ASSIGNATION(p):
@@ -282,7 +282,7 @@ def p_plot(p):
     '''plot : PLOT LPAREN ID qnp1_push RPAREN npPlot SEMICOLON'''
 
 def p_SUMARRAYS(p):
-    '''sumArrays : SUMARRAYS LPAREN ID qnp1_push COMMA ID qnp1_push RPAREN npSumArrays SEMICOLON'''
+    '''sortArray : SORTARRAY LPAREN ID qnp1_push RPAREN npSortArray SEMICOLON'''
 
 def p_WHILE_LOOP(p):
     '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
@@ -562,7 +562,6 @@ def p_VERIFY_PARAM_FACTOR(p):
     argumentType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     paramTypeInTable = currentParamTable.getParamByIndex(paramCounter - 1)
-    print("AQUI", argumentType, paramTypeInTable)
     if (argumentType == paramTypeInTable):
         quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
     else:
@@ -572,7 +571,6 @@ def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
     '''npVerifyParamsCoherencyFactor : empty'''
     global funcCalledStack, funcCalled
     paramTable = dirFunc.getFunctionByName(funcCalled)['parameterTable']
-    print("test", paramTable.getSize(), paramCounter)
     if (paramTable.getSize() != paramCounter):
         Error("Semantic Error: Params number does not match " + str(paramCounter) + " " + str(paramTable.getSize()))
     if (paramTable.getParamByIndex(paramCounter) != None):
@@ -854,24 +852,22 @@ def p_NPPLOT(p):
         quadruples.getTypeStack().pop()
 
 
-def p_NPSUMARRAYS(p):
-    '''npSumArrays : empty'''
-    quadruples.getOperationsStack().push('sumArrays')
-    print("SUMARRAYS", p[-3], p[-6])
+def p_NPSORTARRAY(p):
+    '''npSortArray : empty'''
+    quadruples.getOperationsStack().push('sortArray')
     if (quadruples.getOperandsStack().size() > 0):
         res = quadruples.getOperandsStack().top()
-        resType = quadruples.getTypeStack().top()
         quadruples.getOperandsStack().pop()
-
-        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3]) and dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-6])):
+        totDim = 0
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])):
             firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
-            temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
-            addressTemp = addressing.handleAddressing(resType, temporalType)
-            quadruples.generateQuad('SUMARRAYS', p[-3], p[-6], addressTemp) #res
-            quadruples.getOperationsStack().pop()
-            quadruples.getTypeStack().pop()
-        else:
-            Error("Semantic error: variables not found")
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) != None):
+            firstNode = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        quadruples.generateQuad('SORT', 'empty', totDim, res) #res
+        quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
 
 
         
@@ -1015,11 +1011,11 @@ def p_NP3_FOR(p):
     expType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     if (currentFunc == globalFunctionName):
-        VControl = addressing.handleAddressing(expType, "temporalGlobal", 1)
+        #VControl = addressing.handleAddressing(expType, "temporalGlobal", 1)
         VFinal = addressing.handleAddressing(expType, "temporalGlobal", 1)
         tx = addressing.handleAddressing(expType, "temporalGlobal", 1)
     else:
-        VControl = addressing.handleAddressing(expType, "temporalLocal", 1)
+        #VControl = addressing.handleAddressing(expType, "temporalLocal", 1)
         VFinal = addressing.handleAddressing(expType, "temporalLocal", 1)
         tx = addressing.handleAddressing(expType, "temporalLocal", 1)
     #VControl = "VControl" # Pending variable. Where is going to be stored?
@@ -1029,7 +1025,7 @@ def p_NP3_FOR(p):
         exp = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
         quadruples.generateQuad("=", exp, "empty", VFinal)
-        quadruples.generateQuad("=", VControl, "empty", tx)
+        quadruples.generateQuad("<", VControl, VFinal, tx)
         cont = quadruples.getQuad().size() + 1
         quadruples.getJumpsStack().push(cont - 1)
         quadruples.generateQuad("GoToF", tx, "empty", None)
@@ -1046,7 +1042,13 @@ def p_NP4_FOR(p):
         ty = addressing.handleAddressing(expType, "temporalGlobal", 1)
     else:
         ty = addressing.handleAddressing(expType, "temporalLocal", 1)
-    quadruples.generateQuad("+", VControl, 1, ty)
+    oneConstantAddress = None
+    if (constantsTable.getConstantByName(1) == None):
+        oneConstantAddress = addressing.handleAddressing('int', 'constant')
+        constantsTable.insert(1, oneConstantAddress)
+    else:
+        oneConstantAddress = constantsTable.getConstantByName(1)["address"]
+    quadruples.generateQuad("+", VControl, oneConstantAddress, ty)
     quadruples.generateQuad("=", ty, "empty", VControl)
     quadruples.generateQuad("=", ty, "empty", quadruples.getOperandsStack().top()) # Original ID
     fin = quadruples.getJumpsStack().top()

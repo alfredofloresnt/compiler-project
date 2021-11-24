@@ -1,0 +1,10 @@
+program MyRlike;
+vars int:j, i, k;
+
+main(){
+    i = 10;
+    k = 1;
+    for (j = 5 to 12.5){
+        print(j);
+    }
+}

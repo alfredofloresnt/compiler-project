@@ -360,25 +360,19 @@ class VirtualMachine():
                         pass
                 plt.plot(arrayIndexes)
                 plt.show()
-            #if (currentQuad[0] == 'SUMARRAYS'):
-            #    startAtAddress = currentQuad[3]
-            #    varaible1Size = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[1])["limSup"] - dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[1])["limInf"]
-            #    varaible1Address = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[1])["address"]
-            #    varaible2Size = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[2])["limSup"] - dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[2])["limInf"]
-            #    varaible2Address = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[2])["address"]
-            #    
-            #    for i in range(varaible1Size):
-            #        try:
-            #            address = startAtAddress + i
-            #            print(varaible1Address + i)
-            #            val1 = getTransformmedAddress(varaible1Address + i) 
-            #            val2 = getTransformmedAddress(varaible2Address + i)
-            #            #print(val1 + val2)
-            #            #insertInMemory(address, val1 + val2)
-            #            arrayIndexes.append(val)
-            #        except:
-            #            pass 
-            #    print("varaibles", varaible1Size)
+            if (currentQuad[0] == 'SORT'):
+                startAtAddress = currentQuad[3]
+                arrayIndexes = []
+                for i in range(currentQuad[2]):
+                    try:
+                        address = startAtAddress + i
+                        val = getTransformmedAddress(address) 
+                        arrayIndexes.append(val)
+                    except:
+                        pass
+                arrayIndexes.sort()
+                for i in arrayIndexes:
+                    print(i)
             ip += 1
         #print("Global Memory")
         #globalMemory.printMemory()
