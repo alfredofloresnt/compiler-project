@@ -1,40 +1,12 @@
 program MyRlike;
-vars int: i,j,p;
-     float: valor;
-
-function int fact(int:j)
 vars int: i;
-{ 
- i = j+(p-j*2+j);
- if (j == 1) {
-  return(j);
- } else {
-  return(j * fact(j-1));
- }
-}
 
-function int calcula(char: y)
-vars int: x;
-{
- x = 1;
- while(x < 11){
-  y = y * arreglo[x];
-  x = x + 1;
-  print(arreglo[x]);
- }
- print("acumulado", y);
+function int fibonacci(int:j, int: k)
+{ 
+     return(j);
 }
 main(){
-read(p);
-j = p * 2;
-i = fact(p);
-for (i = 0 to 10){
- arreglo[i] = p + i;
-}
-while(i>0){
- calcula(p-i)
- j = fact(arreglo[i]);
- print(i,j);
- i = i+1;
-}
+ read(i);
+ i = fibonacci(i, i);
+ print(i);
 }

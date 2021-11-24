@@ -1,0 +1,17 @@
+program MyRlike;
+vars int:i, j, k, c, m;
+
+main(){
+    i = 9;
+    c = 0;
+    j = 0;
+    k = 1;
+    
+    while(c < i){
+        m = j + k;
+        j = k;
+        k = m;
+        c = c + 1;
+    }
+    print(j);
+}

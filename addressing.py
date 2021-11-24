@@ -1,3 +1,6 @@
+from errorHandler import Error
+
+# Address definition
 currentIntGlobalAddress = 1000
 currentFloatGlobalAddress = 2000
 currentCharGlobalAddress = 3000
@@ -20,62 +23,107 @@ currentCharConstAddress = 12000
 def handleAddressing(typeVar, category, add = 1):
     global currentIntGlobalAddress, currentFloatGlobalAddress, currentCharGlobalAddress, currentIntLocalAddress, currentFloatLocalAddress, currentCharLocalAddress, currentIntTemporalAddress, currentFloatTemporalAddress, currentCharTemporalAddress, currentIntConstAddress, currentFloatConstAddress, currentCharConstAddress, currentIntTemporalGlobalAddress, currentFloatTemporalGlobalAddress, currentCharTemporalGlobalAddress, currentIntTemporalLocalAddress, currentFloatTemporalLocalAddress, currentCharTemporalLocalAddress
     if (typeVar == "int" and category == "global" ):
-        aux = currentIntGlobalAddress
-        currentIntGlobalAddress += add
-        return aux
+        if (currentIntGlobalAddress >= 1000 and currentIntGlobalAddress <= 1999):
+            aux = currentIntGlobalAddress
+            currentIntGlobalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "float" and category == "global" ):
-        aux = currentFloatGlobalAddress
-        currentFloatGlobalAddress += add
-        return aux
+        if (currentFloatGlobalAddress >= 2000 and currentFloatGlobalAddress <= 2999):
+            aux = currentFloatGlobalAddress
+            currentFloatGlobalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "char" and category == "global" ):
-        aux = currentCharGlobalAddress
-        currentCharGlobalAddress += add
-        return aux
+        if (currentCharGlobalAddress >= 3000 and currentCharGlobalAddress <= 3999):
+            aux = currentCharGlobalAddress
+            currentCharGlobalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "int" and category == "local" ):
-        aux = currentIntLocalAddress
-        currentIntLocalAddress += add
-        return aux
+        if (currentIntLocalAddress >= 4000 and currentIntLocalAddress <= 4999):
+            aux = currentIntLocalAddress
+            currentIntLocalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "float" and category == "local" ):
-        aux = currentFloatLocalAddress
-        currentFloatLocalAddress += add
-        return aux
+        if (currentFloatLocalAddress >= 5000 and currentFloatLocalAddress <= 5999):
+            aux = currentFloatLocalAddress
+            currentFloatLocalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "char" and category == "local" ):
-        aux = currentCharLocalAddress
-        currentCharLocalAddress += add
-        return aux
+        if (currentCharLocalAddress >= 6000 and currentCharLocalAddress <= 6999):
+            aux = currentCharLocalAddress
+            currentCharLocalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "int" and category == "temporalGlobal" ):
-        aux = currentIntTemporalGlobalAddress
-        currentIntTemporalGlobalAddress += add
-        return aux
+        if (currentIntTemporalGlobalAddress >= 7000 and currentIntTemporalGlobalAddress <= 7499):
+            aux = currentIntTemporalGlobalAddress
+            currentIntTemporalGlobalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "float" and category == "temporalGlobal" ):
-        aux = currentFloatTemporalGlobalAddress
-        currentFloatTemporalGlobalAddress += add
-        return aux
+        if (currentFloatTemporalGlobalAddress >= 7500 and currentFloatTemporalGlobalAddress <= 7999):
+            aux = currentFloatTemporalGlobalAddress
+            currentFloatTemporalGlobalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "char" and category == "temporalGlobal" ):
-        aux = currentCharTemporalGlobalAddress
-        currentCharTemporalGlobalAddress += add
-        return aux
+        if (currentCharTemporalGlobalAddress >= 8000 and currentCharTemporalGlobalAddress <= 8499):
+            aux = currentCharTemporalGlobalAddress
+            currentCharTemporalGlobalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "int" and category == "temporalLocal" ):
-        aux = currentIntTemporalLocalAddress
-        currentIntTemporalLocalAddress += add
-        return aux
+        if (currentIntTemporalLocalAddress >= 8500 and currentIntTemporalLocalAddress <= 8999):
+            aux = currentIntTemporalLocalAddress
+            currentIntTemporalLocalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "float" and category == "temporalLocal" ):
-        aux = currentFloatTemporalLocalAddress
-        currentFloatTemporalLocalAddress += add
-        return aux
+        if (currentFloatTemporalLocalAddress >= 9000 and currentFloatTemporalLocalAddress <= 9499):
+            aux = currentFloatTemporalLocalAddress
+            currentFloatTemporalLocalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "char" and category == "temporalLocal" ):
-        aux = currentCharTemporalLocalAddress
-        currentCharTemporalLocalAddress += add
-        return aux
+        if (currentCharTemporalLocalAddress >= 9500 and currentCharTemporalLocalAddress <= 9999):
+            aux = currentCharTemporalLocalAddress
+            currentCharTemporalLocalAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "int" and category == "constant" ):
-        aux = currentIntConstAddress
-        currentIntConstAddress += add
-        return aux
+        if (currentIntConstAddress >= 10000 and currentIntConstAddress <= 10999):
+            aux = currentIntConstAddress
+            currentIntConstAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "float" and category == "constant" ):
-        aux = currentFloatConstAddress
-        currentFloatConstAddress += add
-        return aux
+        if (currentFloatConstAddress >= 11000 and currentFloatConstAddress <= 11999):
+            aux = currentFloatConstAddress
+            currentFloatConstAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")
     if (typeVar == "char" and category == "constant" ):
-        aux = currentCharConstAddress
-        currentCharConstAddress += add
-        return aux
+        if (currentCharConstAddress >= 12000 and currentCharConstAddress <= 12999):
+            aux = currentCharConstAddress
+            currentCharConstAddress += add
+            return aux
+        else:
+            Error("AddressingOverflow")

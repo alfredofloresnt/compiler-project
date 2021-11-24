@@ -5,6 +5,7 @@ import pickle
 import statistics
 import matplotlib.pyplot as plt
 
+# Memory definition
 class Memory():
     def __init__(self):
         self.data = {}
@@ -22,6 +23,7 @@ class Memory():
     def printMemory(self):
         pprint.pprint(self.data)
 
+# Stack segment definition
 class StackSegment():
     def __init__(self):
         self.data = [{}]
@@ -74,7 +76,7 @@ class StackSegment():
             pprint.pprint(x)
 
 
-
+# Vistual machine definition. All the operations from generated quadruples are executed here.
 class VirtualMachine():
     def beginMachine(self):
         objectCodeData = None
@@ -139,54 +141,58 @@ class VirtualMachine():
                 if (index == 3):
                     return address
                 return getFromMemory(address)
-            
+        # Memory initialization
         globalMemory = Memory()
         localMemory = StackSegment()
         checkpoints = qp.Stack()
-        tempLocalMemory = Memory()
+        #tempLocalMemory = Memory()
         tempGlobalMemory = Memory()
         constantsMemory = Memory()
+
+        # Variables initialization
         ip = 0
         paramsStore = []
         currentQuad = quadruples.get(ip)
         currentFunc = dirFunc.getMainName()
+
         # Change keys to address to get quick access
         for key, obj in constantsTable.items():
             constantsMemory.insert(obj['address'], obj['name'])
-        while(currentQuad[0] != 'END'):
+
+        while(currentQuad[0] != 'END'): # Ends program when a END is found
             currentQuad = quadruples.get(ip)
             # Big switch case
-            if (currentQuad[0] == '='):
+            if (currentQuad[0] == '='): # Assignation is found
                 newVal = getTransformmedAddress(currentQuad[1])
                 resDir = getTransformmedAddress(currentQuad[3], 3)
                 insertInMemory(resDir, newVal)
-            if (currentQuad[0] == '+'):
+            if (currentQuad[0] == '+'): # addition is founds
                 valLeft = getTransformmedAddress(currentQuad[1])
                 valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft + valRight)
-            if (currentQuad[0] == '-'):
+            if (currentQuad[0] == '-'): # Substraction is found
                 valLeft = getFromMemory(currentQuad[1])
                 valRight = getFromMemory(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft - valRight)
-            if (currentQuad[0] == '*'):
+            if (currentQuad[0] == '*'): # Mult is found
                 valLeft = getFromMemory(currentQuad[1])
                 valRight = getFromMemory(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft * valRight)
-            if (currentQuad[0] == '/'):
+            if (currentQuad[0] == '/'): # Division is found
                 valLeft = getFromMemory(currentQuad[1])
                 valRight = getFromMemory(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft / valRight)
-            if (currentQuad[0] == 'GoTo'):
+            if (currentQuad[0] == 'GoTo'): # GOTO id found
                 ip = currentQuad[3] - 2 # -2 Because quads start at index 0 and add one more iteration
             if (currentQuad[0] == 'GoToF'):
                 val = getFromMemory(currentQuad[1])
                 if (val == 0):
                     ip = currentQuad[3] - 2
-            if (currentQuad[0] == '<'):
+            if (currentQuad[0] == '<'):# Less than id found
                 valLeft = getFromMemory(currentQuad[1])
                 valRight = getFromMemory(currentQuad[2])
                 addressTemp = currentQuad[3]
@@ -194,7 +200,7 @@ class VirtualMachine():
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
-            if (currentQuad[0] == '>'):
+            if (currentQuad[0] == '>'): # Greater than is found
                 valLeft = getFromMemory(currentQuad[1])
                 valRight = getFromMemory(currentQuad[2])
                 addressTemp = currentQuad[3]
@@ -256,20 +262,15 @@ class VirtualMachine():
             if (currentQuad[0] == 'READ'):
                 varToBeAssigned = currentQuad[1]
                 val = input()
-                def getType(s):
+                # Return the type of a string that can be converted in other type 
+                try:
+                    val = int(val)
+                except ValueError:
                     try:
-                        int(s)
-                        return "int" 
+                        val = float(val)
                     except ValueError:
-                        try:
-                            float(s)
-                            return "float"
-                        except ValueError:
-                            str(s)
-                            return "char"
-                valType = getType(val)
-                if (valType == "char"):
-                    val = val[0]
+                        val = str(val)[0]
+                        return "char"
                 insertInMemory(varToBeAssigned, val)
             if (currentQuad[0] == 'ERA'):
                 #Validate space
@@ -300,7 +301,7 @@ class VirtualMachine():
 
             if (currentQuad[0] == 'ENDFUNC'):
                 if (needReturn):
-                    Error("Runtime error: The function", currentFunc, "need to be exited by a return statement")
+                    Error("Runtime Error: The function", currentFunc, "need to be exited by a return statement")
                 if (checkpoints.size() > 0):
                     lastIp = checkpoints.top()
                     checkpoints.pop()
@@ -359,6 +360,25 @@ class VirtualMachine():
                         pass
                 plt.plot(arrayIndexes)
                 plt.show()
+            #if (currentQuad[0] == 'SUMARRAYS'):
+            #    startAtAddress = currentQuad[3]
+            #    varaible1Size = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[1])["limSup"] - dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[1])["limInf"]
+            #    varaible1Address = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[1])["address"]
+            #    varaible2Size = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[2])["limSup"] - dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[2])["limInf"]
+            #    varaible2Address = dirFunc.getVarsTableByFunctionName(currentFunc).getVariableByName(currentQuad[2])["address"]
+            #    
+            #    for i in range(varaible1Size):
+            #        try:
+            #            address = startAtAddress + i
+            #            print(varaible1Address + i)
+            #            val1 = getTransformmedAddress(varaible1Address + i) 
+            #            val2 = getTransformmedAddress(varaible2Address + i)
+            #            #print(val1 + val2)
+            #            #insertInMemory(address, val1 + val2)
+            #            arrayIndexes.append(val)
+            #        except:
+            #            pass 
+            #    print("varaibles", varaible1Size)
             ip += 1
         #print("Global Memory")
         #globalMemory.printMemory()

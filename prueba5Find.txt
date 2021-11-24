@@ -1,0 +1,11 @@
+program MyRlike;
+vars int:i, j[3...6];
+
+main(){
+    i = 109;
+    j[3] = 563;
+    j[4] = 785;
+    j[5] = 108;
+    j[6] = 348;
+    find(i, j);
+}

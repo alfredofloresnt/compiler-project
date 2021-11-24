@@ -1,4 +1,8 @@
-
+#########################################
+# Name: Alfredo Flores
+# ID: a00821482
+# Language name: MyRLike
+#########################################
 import ply.lex as lex
 import ply.yacc as yacc
 import varTables as vt
@@ -11,8 +15,9 @@ from errorHandler import Error
 import random
 import traceback
 import pickle
-# Lexer
+import sys
 
+# Lexer
 # Definicion de tokens
 reserved = {
     'if' : 'IF',
@@ -35,7 +40,8 @@ reserved = {
     'reverse': 'REVERSE',
     'find': 'FIND',
     'mode': 'MODE',
-    'plotXY': 'PLOT'
+    'plotXY': 'PLOT',
+    'sumArrays': "SUMARRAYS"
 }
 
 tokens = ['LETTER', 
@@ -231,12 +237,13 @@ def p_STATEMENT(p):
                 | whileLoop
                 | readInput
                 | returnFunc
-                | functionCall
+                | functionCall SEMICOLON
                 | forLoop
                 | find
                 | avg
                 | mode
                 | plot
+                | sumArrays
                 '''
 
 def p_ASSIGNATION(p):
@@ -256,8 +263,7 @@ def p_PRINT_ON_SCREEN(p):
     '''print : PRINT LPAREN print2'''
 
 def p_PRINT_ON_SCREEN2(p):
-    '''print2 : expression npPrint print3  
-              | ctestring npPrint print3'''
+    '''print2 : expression npPrint print3'''
 
 def p_PRINT_ON_SCREEN3(p):
     '''print3 : COMMA print2
@@ -274,6 +280,9 @@ def p_MODE(p):
 
 def p_plot(p):
     '''plot : PLOT LPAREN ID qnp1_push RPAREN npPlot SEMICOLON'''
+
+def p_SUMARRAYS(p):
+    '''sumArrays : SUMARRAYS LPAREN ID qnp1_push COMMA ID qnp1_push RPAREN npSumArrays SEMICOLON'''
 
 def p_WHILE_LOOP(p):
     '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
@@ -335,14 +344,15 @@ def p_FACTOR2(p):
     '''factor2 : OPERATORTYPE1'''
 
 def p_FACTOR3(p):
-    '''factor3 : LSQUAREBRACKET npArrayAccessPushDim expression npArrayAccessVerifyLimits RSQUAREBRACKET npArrayAccessGenerateQuad'''
+    '''factor3 : LSQUAREBRACKET npArrayAccessPushDim expression  RSQUAREBRACKET npArrayAccessGenerateQuad'''
 
 def p_FUNCTION_FACTOR(p):
     '''functionFactor : ID npFunctionPushFactor npVerifyFuncFactor npCreateEraFactor LPAREN functionCall2Factor RPAREN npVerifyParamsCoherencyFactor'''
 
 def p_FUNCTION_CALL2_FACTOR(p):
-    '''functionCall2Factor : superExpression npVerifyParamFactor 
-                     | superExpression npVerifyParamFactor COMMA npMoveNextParam functionCall2Factor '''
+    '''functionCall2Factor : superExpression npVerifyParamFactor npMoveNextParam
+                     | superExpression npVerifyParamFactor COMMA npMoveNextParam functionCall2Factor
+                     | empty'''
 #def p_FACTOR4(p):
 #    '''factor4 : expression COMMA factor4
 #                | expression RPAREN'''
@@ -371,9 +381,6 @@ def p_GOTO_MAIN(p):
     '''npGoToMain : empty'''
     cont = quadruples.getQuad().size() + 1
     quadruples.fillQuad(1, cont)
-
-
-
 
 def p_NP2_CREATE_MAIN_VARS_TABLE(p):
     '''np2CreateMainVarsTable : empty'''
@@ -404,8 +411,7 @@ def p_NP3_CREATE_VARS_TABLE(p):
         currentParamTable = vt.Params() 
         currentVarTable = vt.Vars()
         dirFunc.addVarsTable(currentFunc, currentVarTable)
-        dirFunc.addParametersTable(currentFunc, currentParamTable)
-        
+        dirFunc.addParametersTable(currentFunc, currentParamTable)     
 
 def p_NP4_ADD_CURRENT_TABLE(p):
     '''np4AddCurrentTable : empty'''
@@ -433,8 +439,7 @@ def p_ADD_PARAMETERS_CURRENT_TABLE(p):
         Error("Semantic Error: Multiple variable declaration of " + p[-1])
     else:
         currentVarTable.insert({"name": p[-1], "type": currentType, "address": addressing.handleAddressing(currentType, "local")})
-        currentParamTable.insert(currentType)
-        
+        currentParamTable.insert(currentType)    
 
 def p_COUNT_PARAMETERS(p):
     '''npCountParameters : empty'''
@@ -474,7 +479,6 @@ def p_CREATE_ERA(p):
     quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
     paramCounter = 1
     currentFuncAux = currentFunc
-    
     currentParamTable = dirFunc.getFunctionByName(funcCalled)["parameterTable"]
 
 def p_VERIFY_PARAM(p):
@@ -488,7 +492,7 @@ def p_VERIFY_PARAM(p):
     if (argumentType == paramTypeInTable):
         quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
     else:
-        Error("Semantic Error: Wrong funtion signature", argumentType, "is not", paramTypeInTable)
+        Error("Semantic Error: Wrong funtion signature " + str(argumentType) +  " is not " + str(paramTypeInTable))
 
 def p_MOVE_NEXT_PARAM(p):
     '''npMoveNextParam : empty'''
@@ -517,19 +521,18 @@ def p_VERIFY_PARAMS_COHERENCY(p):
         funcCalled = funcCalledStack[-1]
     else:
         funcCalled = None
-    
-
 
 ########################
 def p_FUNCTION_PUSH_FACTOR(p):
     '''npFunctionPushFactor : empty'''
-    
-    funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['address']
-    funcType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
-    quadruples.getOperandsStack().push(funcAddress)
-    quadruples.getTypeStack().push(funcType)
+    if (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])):
+        funcAddress = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['address']
+        funcType = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-1])['type']
+        quadruples.getOperandsStack().push(funcAddress)
+        quadruples.getTypeStack().push(funcType)
+    else:
+        Error("Semantic error: Function " + p[-1] + " needs a return")
     #quadruples.getOperationsStack().push("(")
-    
 
 def p_VERIFY_FUNCTION_FACTOR(p):
     '''npVerifyFuncFactor : empty'''
@@ -547,9 +550,8 @@ def p_CREATE_ERA_FACTOR(p):
     global currentFunc
     global currentParamTable
     quadruples.generateQuad("ERA", funcCalled, 'empty', 'empty')
-    paramCounter = 1
+    paramCounter = 0
     currentFuncAux = currentFunc
-    
     currentParamTable = dirFunc.getFunctionByName(funcCalled)["parameterTable"]
 
 def p_VERIFY_PARAM_FACTOR(p):
@@ -560,18 +562,21 @@ def p_VERIFY_PARAM_FACTOR(p):
     argumentType = quadruples.getTypeStack().top()
     quadruples.getTypeStack().pop()
     paramTypeInTable = currentParamTable.getParamByIndex(paramCounter - 1)
+    print("AQUI", argumentType, paramTypeInTable)
     if (argumentType == paramTypeInTable):
         quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
     else:
-        Error("Semantic Error: Wrong funtion signature", argumentType, "is not", paramTypeInTable)
-
+        Error("Semantic Error: Wrong funtion signature " + str(argumentType) +  " is not " + str(paramTypeInTable))
 
 def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
     '''npVerifyParamsCoherencyFactor : empty'''
     global funcCalledStack, funcCalled
     paramTable = dirFunc.getFunctionByName(funcCalled)['parameterTable']
+    print("test", paramTable.getSize(), paramCounter)
+    if (paramTable.getSize() != paramCounter):
+        Error("Semantic Error: Params number does not match " + str(paramCounter) + " " + str(paramTable.getSize()))
     if (paramTable.getParamByIndex(paramCounter) != None):
-        Error("Semantic Error: Params number does not match", paramCounter, paramTable.getSize())
+        Error("Semantic Error: Params number does not match " +  str(paramCounter) + " " +str(paramTable.getSize()))
     else:
         quadruples.generateQuad("GOSUB", funcCalled, 'empty', dirFunc.getStartAtQuad(funcCalled))
         funcCalledType = dirFunc.getFunctionByName(funcCalled)["type"]
@@ -591,7 +596,6 @@ def p_VERIFY_PARAMS_COHERENCY_FACTOR(p):
         funcCalled = funcCalledStack[-1]
     else:
         funcCalled = None
-
 
 #######################
 
@@ -695,6 +699,7 @@ def getAddress(name):
     else:
         Error("Semantic Error: Type mismatch, variable " + str(name) + " does not exist")
 
+# Quadruples process is where stacks pops their elements and validates with semantic cube
 def quadruplesProcess():
     rightOperand = quadruples.getOperandsStack().top()
     quadruples.getOperandsStack().pop()
@@ -742,8 +747,6 @@ def p_QNP7_LOGICOPERATION_APPLY(p):
     if (quadruples.getOperationsStack().size() > 0):
         if (quadruples.getOperationsStack().top() == "&&" or quadruples.getOperationsStack().top() == "||"):
             quadruplesProcess()
-
-
 
 # Neuralgic point for ASSIGMENT statement
 def p_ASSIGMENTNP(p):
@@ -849,6 +852,29 @@ def p_NPPLOT(p):
         quadruples.generateQuad('PLOT', 'empty', totDim, res) #res
         quadruples.getOperationsStack().pop()
         quadruples.getTypeStack().pop()
+
+
+def p_NPSUMARRAYS(p):
+    '''npSumArrays : empty'''
+    quadruples.getOperationsStack().push('sumArrays')
+    print("SUMARRAYS", p[-3], p[-6])
+    if (quadruples.getOperandsStack().size() > 0):
+        res = quadruples.getOperandsStack().top()
+        resType = quadruples.getTypeStack().top()
+        quadruples.getOperandsStack().pop()
+
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3]) and dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-6])):
+            firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
+            temporalType = "temporalLocal" if currentFunc != globalFunctionName else "temporalGlobal"
+            addressTemp = addressing.handleAddressing(resType, temporalType)
+            quadruples.generateQuad('SUMARRAYS', p[-3], p[-6], addressTemp) #res
+            quadruples.getOperationsStack().pop()
+            quadruples.getTypeStack().pop()
+        else:
+            Error("Semantic error: variables not found")
+
+
+        
 
 # Neuralgic point for READ statement
 def p_READ(p):
@@ -1020,7 +1046,6 @@ def p_NP4_FOR(p):
         ty = addressing.handleAddressing(expType, "temporalGlobal", 1)
     else:
         ty = addressing.handleAddressing(expType, "temporalLocal", 1)
-
     quadruples.generateQuad("+", VControl, 1, ty)
     quadruples.generateQuad("=", ty, "empty", VControl)
     quadruples.generateQuad("=", ty, "empty", quadruples.getOperandsStack().top()) # Original ID
@@ -1050,7 +1075,11 @@ def p_NP_SET_ARRAY_DIM(p):
     nodeAux = vt.ArrayDimNode()
     nodeAux.setLimInf(p[-3])
     nodeAux.setLimSup(p[-1])
+    if (p[-3] > p[-1]):
+        Error("Semantic error: Array bounds not correct")
     R = ( p[-1] - p[-3] + 1) * R
+    currentVarTable.getVariableByName(p[-7])["limInf"] = p[-3]
+    currentVarTable.getVariableByName(p[-7])["limSup"] = p[-1]
     currentArrayNodeAux = nodeAux
     currentVarTable.getVariableByName(p[-7])['dim'] = nodeAux
 
@@ -1110,7 +1139,6 @@ def p_ARRAY_ACCESS_VERIFY_LIMITS(p):
     limSup = currentArrayNodeAux.getLimSup()
     quadruples.generateQuad('VERIFY',  quadruples.getOperandsStack().top(), limInf, limSup)
 
-
 def getVariableGlobalorLocal(name):
     if (currentVarTable.getVariableByName(name)):
         return currentVarTable.getVariableByName(name)
@@ -1141,6 +1169,8 @@ def p_ARRAY_ACCESS_GENERATE_QUAD(p):
     quadruples.getOperandsStack().push("("+str(temp2Address)+")")
     quadruples.getOperationsStack().pop()
 
+
+# Program ends
 def p_END_MAIN(p):
     '''npEndMain : empty'''
     quadruples.generateQuad("END", 'empty', 'empty', 'empty')
@@ -1149,8 +1179,12 @@ def p_END_MAIN(p):
 parser = yacc.yacc()
 print("Yacc has been generated!")
 
+# Load code file to be compiled
+file = "code3.txt"
+if (len(sys.argv) > 1 and sys.argv[1]):
+    file = str(sys.argv[1])
+codeToCompile = open(file,'r')
 
-codeToCompile = open('code3.txt','r')
 data = str(codeToCompile.read())
 lexer.input(data)
 # Debug tokens
@@ -1174,7 +1208,7 @@ except Exception as e:
     traceback.print_exc()
     print('Error in code!', e)
 
-
+# Generate object code
 with open('object.code', 'wb') as handle:
     pickle.dump(
         {

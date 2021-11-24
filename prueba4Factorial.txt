@@ -1,0 +1,13 @@
+program MyRlike;
+vars int:i, j, k, c, m;
+
+main(){
+    i = 1;
+    read(j);
+    k = 1;
+    while(i <= j){
+        k = k * i;
+        i = i + 1;
+    }
+    print(k);
+}
