@@ -129,7 +129,7 @@ def t_error(t):
 
 
 #Build lexer
-lexer = lex.lex()
+lexer = lex.lex(errorlog=lex.NullLogger())
 print("Lexer has been genereated!")
     
 
@@ -1193,7 +1193,7 @@ def p_END_MAIN(p):
     quadruples.generateQuad("END", 'empty', 'empty', 'empty')
 
 # Build Yacc
-parser = yacc.yacc()
+parser = yacc.yacc(errorlog=yacc.NullLogger())
 print("Yacc has been generated!")
 
 # Load code file to be compiled
