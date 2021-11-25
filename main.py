@@ -41,7 +41,8 @@ reserved = {
     'find': 'FIND',
     'mode': 'MODE',
     'plotXY': 'PLOT',
-    'sortArray': "SORTARRAY"
+    'sortArray': "SORTARRAY",
+    'sumArrays': "SUMARRAYS"
 }
 
 tokens = ['LETTER', 
@@ -244,6 +245,7 @@ def p_STATEMENT(p):
                 | mode
                 | plot
                 | sortArray
+                | sumArrays
                 '''
 
 def p_ASSIGNATION(p):
@@ -281,8 +283,11 @@ def p_MODE(p):
 def p_plot(p):
     '''plot : PLOT LPAREN ID qnp1_push RPAREN npPlot SEMICOLON'''
 
-def p_SUMARRAYS(p):
+def p_SORTRRAYS(p):
     '''sortArray : SORTARRAY LPAREN ID qnp1_push RPAREN npSortArray SEMICOLON'''
+
+def p_SUMARRAYS(p):
+    '''sumArrays : SUMARRAYS LPAREN ID qnp1_push COMMA ID qnp1_push RPAREN npSumArray SEMICOLON'''
 
 def p_WHILE_LOOP(p):
     '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
@@ -344,7 +349,7 @@ def p_FACTOR2(p):
     '''factor2 : OPERATORTYPE1'''
 
 def p_FACTOR3(p):
-    '''factor3 : LSQUAREBRACKET npArrayAccessPushDim expression  RSQUAREBRACKET npArrayAccessGenerateQuad'''
+    '''factor3 : LSQUAREBRACKET npArrayAccessPushDim expression npArrayAccessVerifyLimits  RSQUAREBRACKET npArrayAccessGenerateQuad'''
 
 def p_FUNCTION_FACTOR(p):
     '''functionFactor : ID npFunctionPushFactor npVerifyFuncFactor npCreateEraFactor LPAREN functionCall2Factor RPAREN npVerifyParamsCoherencyFactor'''
@@ -869,7 +874,17 @@ def p_NPSORTARRAY(p):
         quadruples.getOperationsStack().pop()
         quadruples.getTypeStack().pop()
 
-
+def p_NPSUMARRAY(p):
+    '''npSumArray : empty'''
+    quadruples.getOperationsStack().push('sumArray')
+    if (quadruples.getOperandsStack().size() > 0):
+        id2 = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        id1 = quadruples.getOperandsStack().top()
+        quadruples.getOperandsStack().pop()
+        quadruples.generateQuad('SUMARRAY', id2, id1, 'empty') #res
+        quadruples.getOperationsStack().pop()
+        quadruples.getTypeStack().pop()
         
 
 # Neuralgic point for READ statement
