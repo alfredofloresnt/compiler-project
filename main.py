@@ -1197,7 +1197,7 @@ parser = yacc.yacc(errorlog=yacc.NullLogger())
 print("Yacc has been generated!")
 
 # Load code file to be compiled
-file = "code3.txt"
+file = "code.txt"
 if (len(sys.argv) > 1 and sys.argv[1]):
     file = str(sys.argv[1])
 codeToCompile = open(file,'r')

@@ -1,4 +1,0 @@
-program MyRlike;
-main(){
-i = 2;
-}

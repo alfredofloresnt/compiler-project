@@ -1,12 +1,22 @@
 program MyRlike;
-vars int: i;
-
-function int fibonacci(int:j, int: k)
-{ 
-     return(j);
+vars float: i, j[3...10], k;
+float:g;
+function void test123(float:x){
+    j = 17;
+    print(j);
 }
+function void test(float:x){
+    j = 10 / 3;
+    print(j);
+    test123(j);
+}
+
 main(){
- read(i);
- i = fibonacci(i, i);
- print(i);
+    i = 0;
+    k = 20;
+    j[4] = 10;
+    test(i);
+    print(k);
+    
+    
 }
