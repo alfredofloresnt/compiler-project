@@ -1,5 +1,5 @@
 program MyRlike;
-vars int:j, i, k[2...5], aux;
+vars int:j, i, k[0...5], aux;
 
 function void mySort(int:limInf, int:limSup)
 vars int:i, j;
@@ -20,7 +20,7 @@ vars int:i, j;
 }
 
 main(){
-    i = 2;
+    i = 0;
     while(i <= 5){
 
         read(k[i]);
@@ -28,9 +28,9 @@ main(){
         i = i + 1;
     }
 
-    mySort(2,5); 
+    mySort(0,5); 
 
-    i = 2;
+    i = 0;
     while(i <= 5){
         print(k[i]);
         i = i + 1;
