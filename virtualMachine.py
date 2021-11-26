@@ -15,7 +15,7 @@ class Memory():
         if (address in self.data):
             return self.data[address]
         else:
-            Error("Runtime error: Variable not found")
+            raise Exception('"Runtime error: Variable not found')
     def setData(self, val):
         self.data = val
     def getData(self):
@@ -180,85 +180,85 @@ class VirtualMachine():
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft + valRight)
             if (currentQuad[0] == '-'): # Substraction is found
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft - valRight)
             if (currentQuad[0] == '*'): # Mult is found
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft * valRight)
             if (currentQuad[0] == '/'): # Division is found
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 insertInMemory(addressTemp, valLeft / valRight)
             if (currentQuad[0] == 'GoTo'): # GOTO id found
                 ip = currentQuad[3] - 2 # -2 Because quads start at index 0 and add one more iteration
             if (currentQuad[0] == 'GoToF'):
-                val = getFromMemory(currentQuad[1])
+                val = getTransformmedAddress(currentQuad[1])
                 if (val == 0):
                     ip = currentQuad[3] - 2
             if (currentQuad[0] == '<'):# Less than id found
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft < valRight):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '>'): # Greater than is found
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft > valRight):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '>='):
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft >= valRight):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '<='):
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft <= valRight):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '!='):
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft != valRight):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '=='):
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft == valRight):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '&&'):
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft == 1 and valRight == 1):
                     insertInMemory(addressTemp, 1)
                 else:
                     insertInMemory(addressTemp, 0)
             if (currentQuad[0] == '||'):
-                valLeft = getFromMemory(currentQuad[1])
-                valRight = getFromMemory(currentQuad[2])
+                valLeft = getTransformmedAddress(currentQuad[1])
+                valRight = getTransformmedAddress(currentQuad[2])
                 addressTemp = currentQuad[3]
                 if (valLeft == 1 or valRight == 1):
                     insertInMemory(addressTemp, 1)
@@ -289,7 +289,7 @@ class VirtualMachine():
             if (currentQuad[0] == 'PARAMETER'):
                 paramIndex = currentQuad[3]-1
                 address = paramsStore[paramIndex]['address']
-                val = getFromMemory(currentQuad[1])
+                val = getTransformmedAddress(currentQuad[1])
                 insertInMemory(address, val)
             if (currentQuad[0] == 'GOSUB'):
                 saveQuad = ip + 2
@@ -340,7 +340,7 @@ class VirtualMachine():
                 for i in range(currentQuad[2]):
                     try:
                         address = startAtAddress + i
-                        val = getTransformmedAddress(address) 
+                        val = getTransformmedAddress(address)
                         arrayIndexes.append(val)
                     except:
                         pass

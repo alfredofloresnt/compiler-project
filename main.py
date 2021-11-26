@@ -568,7 +568,7 @@ def p_VERIFY_PARAM_FACTOR(p):
     quadruples.getTypeStack().pop()
     paramTypeInTable = currentParamTable.getParamByIndex(paramCounter - 1)
     if (argumentType == paramTypeInTable):
-        quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter)
+        quadruples.generateQuad("PARAMETER", argument, "empty", paramCounter + 1)
     else:
         Error("Semantic Error: Wrong funtion signature " + str(argumentType) +  " is not " + str(paramTypeInTable))
 
