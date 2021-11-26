@@ -268,7 +268,7 @@ class VirtualMachine():
                 val = getFromMemory(getTransformmedAddress(currentQuad[3], 3))
                 print(val)
             if (currentQuad[0] == 'READ'):
-                varToBeAssigned = currentQuad[1]
+                varToBeAssigned = getTransformmedAddress(currentQuad[1], 3)
                 val = input()
                 # Return the type of a string that can be converted in other type 
                 try:
