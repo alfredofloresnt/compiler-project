@@ -387,31 +387,17 @@ class VirtualMachine():
                     if (dispIndexes[i] != -1):
                         insertInMemory(address,arrayIndexes[i])
                         cont += 1
-            #if (currentQuad[0] == 'SUMARRAY'):
-            #    arrayAddress1 = currentQuad[1]
-            #    arrayAddress2 = currentQuad[2]
-            #    arrayIndexes1 = []
-            #    arrayIndexes2 = []
-            #    dispIndexes1 = []
-            #    dispIndexes2 = []
-            #    cont = 0
-            #    var1 = findVariableByAdrresInDir(arrayAddress1, currentFunc)
-            #    var2 = findVariableByAdrresInDir(arrayAddress2, currentFunc)
-            #    print("DATA", var1, var2)
-            #    def getArrayindexes(startAtAddress, size):
-            #        dispIndexes = []
-            #        arrayIndexes = []
-            #        for i in range(size):
-            #            try:
-            #                address = startAtAddress + i
-            #                val = getTransformmedAddress(address) 
-            #                dispIndexes.append(1)
-            #                arrayIndexes.append(val)
-            #            except:
-            #                dispIndexes.append(-1)
-            #        return dispIndexes, arrayIndexes
-            #    dispIndexes1, arrayIndexes1 = getArrayindexes(arrayAddress1, var1["limSup"] - var2["limInf"] + 1)
-            #    print(arrayAddress1)
+            if (currentQuad[0] == 'STD'):
+                startAtAddress = currentQuad[3]
+                arrayIndexes = []
+                for i in range(currentQuad[2]):
+                    try:
+                        address = startAtAddress + i
+                        val = getTransformmedAddress(address) 
+                        arrayIndexes.append(val)
+                    except:
+                        pass
+                print("The STD is:", statistics.stdev(arrayIndexes))
                 
                         
             ip += 1

@@ -37,7 +37,7 @@ reserved = {
     'function': 'FUNCTION',
     'return': 'RETURN',
     'avg': 'AVG',
-    'reverse': 'REVERSE',
+    'std': 'STD',
     'find': 'FIND',
     'mode': 'MODE',
     'plotXY': 'PLOT',
@@ -245,7 +245,7 @@ def p_STATEMENT(p):
                 | mode
                 | plot
                 | sortArray
-                | sumArrays
+                | std
                 '''
 
 def p_ASSIGNATION(p):
@@ -286,8 +286,8 @@ def p_plot(p):
 def p_SORTRRAYS(p):
     '''sortArray : SORTARRAY LPAREN ID qnp1_push RPAREN npSortArray SEMICOLON'''
 
-def p_SUMARRAYS(p):
-    '''sumArrays : SUMARRAYS LPAREN ID qnp1_push COMMA ID qnp1_push RPAREN npSumArray SEMICOLON'''
+def p_STD(p):
+    '''std : STD LPAREN ID qnp1_push RPAREN npSTD SEMICOLON'''
 
 def p_WHILE_LOOP(p):
     '''whileLoop : WHILE npWhile1 LPAREN superExpression RPAREN npWhile2 block npWhile3'''
@@ -874,15 +874,20 @@ def p_NPSORTARRAY(p):
         quadruples.getOperationsStack().pop()
         quadruples.getTypeStack().pop()
 
-def p_NPSUMARRAY(p):
-    '''npSumArray : empty'''
-    quadruples.getOperationsStack().push('sumArray')
+def p_NPSTD(p):
+    '''npSTD : empty'''
+    quadruples.getOperationsStack().push('std')
     if (quadruples.getOperandsStack().size() > 0):
-        id2 = quadruples.getOperandsStack().top()
+        res = quadruples.getOperandsStack().top()
         quadruples.getOperandsStack().pop()
-        id1 = quadruples.getOperandsStack().top()
-        quadruples.getOperandsStack().pop()
-        quadruples.generateQuad('SUMARRAY', id2, id1, 'empty') #res
+        totDim = 0
+        if (dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])):
+            firstNode = dirFunc.getFunctionByName(currentFunc)["table"].getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        elif (dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3]) != None):
+            firstNode = dirFunc.getVarsTableByFunctionName(globalFunctionName).getVariableByName(p[-3])["dim"]
+            totDim = firstNode.getLimSup() - firstNode.getLimInf() + 1
+        quadruples.generateQuad('STD', 'empty', totDim, res) #res
         quadruples.getOperationsStack().pop()
         quadruples.getTypeStack().pop()
         

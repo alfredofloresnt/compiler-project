@@ -1,0 +1,22 @@
+program MyRlike;
+vars int: i, res, k[0...4], f[0...4];
+
+main(){
+    i = 2;
+    k[0] = 8;
+    k[1] = 2;
+    k[2] = 4;
+    k[3] = 3;
+    k[4] = 5;
+
+    f[0] = 2;
+    f[1] = 1;
+    f[2] = 7;
+    f[3] = 9;
+    f[4] = 10;
+
+    for (i = 0 to 5){
+        res = k[i] * f[i];
+        print(res);
+    }
+}
